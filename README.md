@@ -1,3 +1,33 @@
+# CivFit Expo
+
+Versi Expo dari CivFit memakai Expo Router dengan empat area utama:
+- `Realita` untuk ringkasan progres dan dashboard utama.
+- `Kota` untuk sistem populasi, bangunan, dan evolusi.
+- `Toko` untuk item pemulihan dan ekonomi.
+- `Menu` untuk arsitektur aplikasi dan langkah pengembangan berikutnya.
+
+## Struktur
+
+- `app/(tabs)/` berisi route utama aplikasi.
+- `src/data/civfit.ts` menyimpan data domain yang dipakai oleh layar-layar Expo.
+- `src/components/civfit/` berisi komponen UI yang dipakai bersama.
+## Menjalankan proyek
+
+1. Install dependency.
+
+   ```bash
+   npm install
+   ```
+
+2. Jalankan aplikasi.
+
+   ```bash
+   npx expo start
+   ```
+
+## Langkah berikutnya
+
+Kalau ingin melanjutkan dari struktur ini, area paling natural untuk diisi dulu adalah store state, login, dan sinkronisasi Firebase di lapisan service terpisah.
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
