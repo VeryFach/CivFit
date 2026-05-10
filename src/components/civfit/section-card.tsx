@@ -41,17 +41,17 @@ export function SectionCard({ title, description, badge, icon, onPress }: Sectio
 
 const styles = StyleSheet.create({
     card: {
-        borderRadius: 24,
+        borderRadius: 28,
         borderWidth: 2,
         borderColor: '#1F2228',
         backgroundColor: '#FFFFFF',
         padding: 18,
         gap: 12,
         shadowColor: '#1F2228',
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.24,
         shadowRadius: 0,
-        shadowOffset: { width: 3, height: 3 },
-        elevation: 3,
+        shadowOffset: { width: 4, height: 4 },
+        elevation: 4,
     },
     pressed: {
         opacity: 0.88,
@@ -90,11 +90,15 @@ const styles = StyleSheet.create({
     title: {
         color: '#1F2228',
         fontSize: 18,
-        fontWeight: '800',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        fontStyle: 'italic',
+        letterSpacing: 0.8,
     },
     description: {
         color: '#4C5158',
         lineHeight: 20,
         fontSize: 14,
+        fontWeight: '600',
     },
 });
