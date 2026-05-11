@@ -1,10 +1,10 @@
 
 export enum Era {
-    STONE_AGE = 'Stone Age',
-    MEDIEVAL = 'Medieval',
-    INDUSTRIAL = 'Industrial',
-    MODERN = 'Modern',
-    DIGITAL = 'Digital'
+    STONE_AGE = 'STONE AGE',
+    MEDIEVAL = 'MEDIEVALedieval',
+    INDUSTRIAL = 'INDUSTRIAL',
+    MODERN = 'MODERN',
+    DIGITAL = 'DIGITAL'
 }
 
 export type HabitType = 'daily' | 'weekly' | 'monthly';

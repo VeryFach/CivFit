@@ -1,16 +1,16 @@
 import { BuildingType, Era, EvolutionBranch } from './types';
 
 export const ERAS_CONFIG = [
-  { 
-    id: Era.STONE_AGE, 
-    minLevel: 1, 
+  {
+    id: Era.STONE_AGE,
+    minLevel: 1,
     name: 'Stone Age',
     description: 'Awal mula kemanusiaan. Fokus pada bertahan hidup dan pengumpulan dasar.',
     unlocks: ['nomadic', 'agrarian']
   },
-  { 
-    id: Era.MEDIEVAL, 
-    minLevel: 5, 
+  {
+    id: Era.MEDIEVAL,
+    minLevel: 5,
     name: 'Medieval',
     description: 'Zaman keemasan kerajaan dan ksatria.',
     unlocks: ['feudal', 'mercantile']

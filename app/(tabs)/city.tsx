@@ -1,4 +1,4 @@
-import { CityScreen } from '@/features/simulation/screens/CityScreen';
+import  CityScreen from '@/features/simulation/CityScreen';
 import { useCivStore } from '@/store';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';

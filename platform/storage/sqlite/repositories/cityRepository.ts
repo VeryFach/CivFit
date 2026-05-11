@@ -8,12 +8,12 @@ export class CityRepository {
        (id, population, population_sick, food, housing, health, happiness, current_era) 
        VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        city.population, 
-        city.populationSick, 
-        city.food, 
-        city.housing, 
-        city.health, 
-        city.happiness, 
+        city.population,
+        city.populationSick,
+        city.food,
+        city.housing,
+        city.health,
+        city.happiness,
         city.currentEra
       ]
     );
@@ -43,7 +43,7 @@ export class CityRepository {
     if (cityRow.length === 0) return null;
 
     const buildings = await sqlite.query<any>('SELECT * FROM buildings');
-    
+
     const row = cityRow[0];
     return {
       population: row.population,

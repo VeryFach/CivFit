@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { COLORS } from '@/theme/index'
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Header } from '@/components/navigation/Header';
@@ -104,6 +105,6 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FDF6E3',
   },
 });

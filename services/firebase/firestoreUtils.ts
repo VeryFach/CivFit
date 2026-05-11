@@ -13,6 +13,7 @@ interface FirestoreErrorInfo {
     error: string;
     operationType: OperationType;
     path: string | null;
+    timestamp: string;
     authInfo: {
         userId?: string | null;
         email?: string | null;
@@ -23,12 +24,20 @@ interface FirestoreErrorInfo {
             providerId?: string | null;
             email?: string | null;
         }[];
-    }
+    };
+    retryable: boolean;
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+    const isRetryable = error instanceof Error && 
+        (error.message.includes('unavailable') || 
+         error.message.includes('offline') || 
+         error.message.includes('internal'));
+
     const errInfo: FirestoreErrorInfo = {
         error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+        retryable: isRetryable,
         authInfo: {
             userId: auth.currentUser?.uid,
             email: auth.currentUser?.email,
@@ -42,7 +51,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
         },
         operationType,
         path
+    };
+
+    console.error(`[${errInfo.timestamp}] Firestore Error (${operationType} ${path}):`, errInfo);
+    
+    // Don't re-throw for retryable errors
+    if (isRetryable) {
+        console.warn(`[${errInfo.timestamp}] Error is retryable, continuing...`);
+        return;
     }
-    console.error('Firestore Error: ', JSON.stringify(errInfo));
+
     throw new Error(JSON.stringify(errInfo));
 }

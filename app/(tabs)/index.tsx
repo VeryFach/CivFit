@@ -1,13 +1,31 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
+import Reality from '@/features/habits/reality';
+import endDay from '@/features/progression/DailyReportOverlay';
+import { useCivStore } from '@/core/progression/store';
 
 export default function RealitaTab() {
+    // Ambil data dan fungsi dari store
+    const habits = useCivStore((state) => state.habits);
+    const stats = useCivStore((state) => state.stats);
+    const addHabit = useCivStore((state) => state.addHabit);
+    const completeHabit = useCivStore((state) => state.completeHabit);
+    const updateHabit = useCivStore((state) => state.updateHabit);
+    const deleteHabit = useCivStore((state) => state.deleteHabit);
+    const endDay = useCivStore((state) => state.endDay);
+
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>Realita Tab</Text>
-                {/* UI components to be migrated */}
-            </View>
+            <Reality
+                habits={habits}
+                hp={stats.hp}
+                momentum={stats.momentum}
+                onAdd={addHabit}
+                onComplete={completeHabit}
+                onUpdate={updateHabit}
+                onDelete={deleteHabit}
+                onEndDay={endDay}
+            />
         </SafeAreaView>
     );
 }
@@ -15,16 +33,7 @@ export default function RealitaTab() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F8FAFC',
         paddingTop: 80,
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 16,
     },
 });

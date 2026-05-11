@@ -1,13 +1,11 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import { MenuTab as MenuTabComponent } from '@/features/profile/menu'; // sesuaikan path impor
 
 export default function MenuTab() {
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>Menu Tab</Text>
-                {/* UI components to be migrated */}
-            </View>
+            <MenuTabComponent />
         </SafeAreaView>
     );
 }
@@ -15,16 +13,7 @@ export default function MenuTab() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
-        paddingTop: 80,
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 16,
+        backgroundColor: '#F8FAFC',
+        // Tidak perlu paddingTop karena MenuTabComponent sudah memiliki padding sendiri
     },
 });

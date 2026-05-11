@@ -22,13 +22,13 @@ export interface DayReport {
 }
 
 export const processEndDay = (
-  stats: UserStats, 
-  city: CityState, 
+  stats: UserStats,
+  city: CityState,
   habits: Habit[],
   today: string
-): { 
-  updatedStats: UserStats; 
-  updatedCity: CityState; 
+): {
+  updatedStats: UserStats;
+  updatedCity: CityState;
   report: DayReport;
   resetHabitIds: string[];
 } => {
@@ -39,7 +39,7 @@ export const processEndDay = (
   const canSkip = stats.skipTickets > 0 && unfinishedDaily.length > dailyHabits.length * 0.5;
   let ticketUsed = false;
   const completionRate = dailyHabits.length > 0 ? finishedToday.length / dailyHabits.length : 1;
-  
+
   let hpChange = 0;
   let momentumChange = 0;
 
@@ -100,19 +100,19 @@ export const processEndDay = (
   let finalHealth = newHealth;
   let finalHappiness = newHappiness;
   if (activeDisaster) {
-     if (activeDisaster.impactType === 'health') finalHealth = Math.max(0, finalHealth - activeDisaster.severity);
-     if (activeDisaster.impactType === 'happiness') finalHappiness = Math.max(0, finalHappiness - activeDisaster.severity);
+    if (activeDisaster.impactType === 'health') finalHealth = Math.max(0, finalHealth - activeDisaster.severity);
+    if (activeDisaster.impactType === 'happiness') finalHappiness = Math.max(0, finalHappiness - activeDisaster.severity);
   }
 
   let nextEra = city.currentEra;
   const eraOrder = [Era.STONE_AGE, Era.MEDIEVAL, Era.INDUSTRIAL, Era.MODERN, Era.DIGITAL];
   const currentIndex = eraOrder.indexOf(city.currentEra);
   if (currentIndex < eraOrder.length - 1) {
-     const nextEraType = eraOrder[currentIndex + 1];
-     const milestone = ERA_MILESTONES.find(m => m.era === nextEraType);
-     if (milestone && finalPop >= milestone.populationTarget) {
-        nextEra = nextEraType;
-     }
+    const nextEraType = eraOrder[currentIndex + 1];
+    const milestone = ERA_MILESTONES.find(m => m.era === nextEraType);
+    if (milestone && finalPop >= milestone.populationTarget) {
+      nextEra = nextEraType;
+    }
   }
 
   const report: DayReport = {
@@ -131,8 +131,8 @@ export const processEndDay = (
     deathCount,
     event: activeDisaster,
     emergencyHabitAdded: !!activeDisaster,
-    message: ticketUsed 
-      ? "Emergency Protocol Activated: Ticket used to safeguard simulation." 
+    message: ticketUsed
+      ? "Emergency Protocol Activated: Ticket used to safeguard simulation."
       : (activeDisaster ? eventImpactMessage : (hpChange >= 0 ? "You dominated the day! Momentum is building." : "A rough day in the simulation. Stay consistent."))
   };
 

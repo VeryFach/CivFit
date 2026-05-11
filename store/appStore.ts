@@ -1,57 +1,23 @@
-import { DEFAULT_HP, EXP_PER_LEVEL } from '@/core/constants';
-import { DayReport, processEndDay } from '@/core/progression/engine';
-import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '@/core/types';
-import { checkStorageVersion } from '@/platform/storage/hydration';
-
-// Delay-load platform-specific modules
-let platformModules: any = null;
-
-const getPlatformModules = async () => {
-    if (platformModules) return platformModules;
-
-    try {
-        const syncMod = await import('@/core/sync/syncEngine');
-        const dbMod = await import('@/platform/storage/sqlite/db');
-        const cityRepo = await import('@/platform/storage/sqlite/repositories/cityRepository');
-        const habitRepo = await import('@/platform/storage/sqlite/repositories/habitRepository');
-        const logRepo = await import('@/platform/storage/sqlite/repositories/logRepository');
-        const statsRepo = await import('@/platform/storage/sqlite/repositories/statsRepository');
-
-        platformModules = {
-            syncEngine: syncMod.syncEngine,
-            sqlite: dbMod.sqlite,
-            CityRepository: cityRepo.CityRepository,
-            habitRepository: habitRepo.habitRepository,
-            logRepository: logRepo.logRepository,
-            statsRepository: statsRepo.statsRepository,
-        };
-    } catch {
-        // Web platform - use empty/mock modules
-        platformModules = {
-            syncEngine: null,
-            sqlite: null,
-            CityRepository: null,
-            habitRepository: null,
-            logRepository: null,
-            statsRepository: null,
-        };
-    }
-
-    return platformModules;
-};
-
-import { auth, db } from '@/services/firebase';
-import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import {
-    collection,
-    doc,
-    limit,
-    onSnapshot,
-    orderBy,
-    query
-} from 'firebase/firestore';
 import { create } from 'zustand';
+import { UserStats, Habit, CityState, ActivityLog, Era, HabitType, PlacedBuilding } from '@/core/types';
+import { EXP_PER_LEVEL, DEFAULT_HP } from '@/core/constants';
+import { processEndDay, DayReport } from '@/core/progression/engine';
+import { auth, db } from '@/services/firebase';
+import {
+    doc,
+    setDoc,
+    onSnapshot,
+    collection,
+    query,
+    orderBy,
+    limit,
+    Timestamp,
+    serverTimestamp,
+    writeBatch,
+    deleteDoc
+} from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
 
 interface CivState {
     currentUser: User | null;
@@ -60,10 +26,9 @@ interface CivState {
     habits: Habit[];
     city: CityState;
     logs: ActivityLog[];
-    platformModules: any | null;
 
     // Actions
-    initialize: () => Promise<void>;
+    initialize: () => void;
     setStats: (stats: UserStats | ((prev: UserStats) => UserStats)) => void;
     setCity: (city: CityState | ((prev: CityState) => CityState)) => void;
     addHabit: (title: string, type: HabitType) => Promise<void>;
@@ -115,184 +80,155 @@ export const useCivStore = create<CivState>((set, get) => ({
     habits: [],
     city: INITIAL_CITY,
     logs: [],
-    platformModules: null,
 
-    initialize: async () => {
-        try {
-            // 0. Load Platform Modules (lazy)
-            const mods = await getPlatformModules();
-            set({ platformModules: mods });
+    initialize: () => {
+        onAuthStateChanged(auth, (user) => {
+            set({ currentUser: user });
 
-            // 1. Hydration
-            await checkStorageVersion();
-            if (mods.sqlite) {
-                await mods.sqlite.init();
-            }
-
-            // 2. Load Local Data Immediately (Production-Grade Offline First)
-            let [localCity, localStats, localHabits, localLogs] = [null, null, [], []];
-            if (mods.CityRepository && mods.statsRepository && mods.habitRepository && mods.logRepository) {
-                [localCity, localStats, localHabits, localLogs] = await Promise.all([
-                    mods.CityRepository.getCity(),
-                    mods.statsRepository.get(),
-                    mods.habitRepository.getAll(),
-                    mods.logRepository.getRecent(50)
-                ]);
-            }
-
-            set({
-                city: localCity || INITIAL_CITY,
-                stats: localStats || INITIAL_STATS,
-                habits: localHabits,
-                logs: localLogs,
-                loading: false
-            });
-
-            // 3. Setup Auth & Cloud Sync
-            onAuthStateChanged(auth, async (user) => {
-                set({ currentUser: user });
-
-                if (user) {
-                    const currentMods = get().platformModules;
-                    if (currentMods && currentMods.syncEngine) {
-                        currentMods.syncEngine.processQueue();
+            if (user) {
+                // Sync User Stats & City
+                const userDocRef = doc(db, 'users', user.uid);
+                onSnapshot(userDocRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
+                        set({
+                            stats: data.stats || INITIAL_STATS,
+                            city: data.city || INITIAL_CITY,
+                            loading: false
+                        });
+                    } else {
+                        // Create new user
+                        const initialData = {
+                            stats: INITIAL_STATS,
+                            city: INITIAL_CITY,
+                            updatedAt: serverTimestamp()
+                        };
+                        setDoc(userDocRef, initialData).catch(e =>
+                            handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`)
+                        );
+                        set({ loading: false });
                     }
+                }, (error) => handleFirestoreError(error, OperationType.GET, `users/${user.uid}`));
 
-                    // Listen for Main Stats & City Updates
-                    const userDocRef = doc(db, 'users', user.uid);
-                    onSnapshot(userDocRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            const data = snapshot.data();
-                            const cloudStats = data.stats || INITIAL_STATS;
-                            const cloudCity = data.city || INITIAL_CITY;
+                // Sync Habits
+                const habitsRef = collection(db, 'users', user.uid, 'habits');
+                onSnapshot(query(habitsRef), (snapshot) => {
+                    const habitsList = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            ...data,
+                            id: doc.id,
+                            createdAt: data.createdAt instanceof Timestamp
+                                ? data.createdAt.toDate().toISOString()
+                                : data.createdAt
+                        } as Habit;
+                    });
+                    set({ habits: habitsList });
+                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/habits`));
 
-                            set({ stats: cloudStats, city: cloudCity });
-
-                            // Persist cloud data to local
-                            if (currentMods?.statsRepository) currentMods.statsRepository.save(cloudStats);
-                            if (currentMods?.CityRepository) currentMods.CityRepository.saveCity(cloudCity);
-                        }
-                    }, (error) => handleFirestoreError(error, OperationType.GET, `users/${user.uid}`));
-
-                    // Listen for Habits
-                    const habitsRef = collection(db, 'users', user.uid, 'habits');
-                    onSnapshot(query(habitsRef), (snapshot) => {
-                        const habitsList = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Habit));
-                        set({ habits: habitsList });
-
-                        // Persist all habits locally
-                        if (currentMods?.habitRepository) {
-                            habitsList.forEach(h => currentMods.habitRepository.save(h));
-                        }
-                    }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/habits`));
-
-                    // Listen for Logs
-                    const logsRef = collection(db, 'users', user.uid, 'logs');
-                    onSnapshot(query(logsRef, orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
-                        const logsList = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ActivityLog));
-                        set({ logs: logsList });
-
-                        // Persist logs locally
-                        if (currentMods?.logRepository) {
-                            logsList.forEach(l => currentMods.logRepository.add(l));
-                        }
-                    }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/logs`));
-                }
-            });
-        } catch (error) {
-            console.error('[Store] Initialize error:', error);
-            set({ loading: false });
-        }
+                // Sync Activity Logs
+                const logsRef = collection(db, 'users', user.uid, 'logs');
+                onSnapshot(query(logsRef, orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
+                    const logsList = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            ...data,
+                            id: doc.id,
+                            timestamp: data.timestamp instanceof Timestamp
+                                ? data.timestamp.toDate().toISOString()
+                                : data.timestamp
+                        } as ActivityLog;
+                    });
+                    set({ logs: logsList });
+                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/logs`));
+            } else {
+                set({ loading: false, habits: [], logs: [], stats: INITIAL_STATS, city: INITIAL_CITY });
+            }
+        });
     },
 
     setStats: (updater) => {
-        const { stats, currentUser, platformModules } = get();
+        const { stats, currentUser } = get();
         const newStats = typeof updater === 'function' ? updater(stats) : updater;
-
         set({ stats: newStats });
-        if (platformModules?.statsRepository) {
-            platformModules.statsRepository.save(newStats); // Save Locally
-        }
 
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { stats: newStats });
+        if (currentUser) {
+            setDoc(doc(db, 'users', currentUser.uid), { stats: newStats, updatedAt: serverTimestamp() }, { merge: true })
+                .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${currentUser.uid}`));
         }
     },
 
     setCity: (updater) => {
-        const { city, currentUser, platformModules } = get();
+        const { city, currentUser } = get();
         const newCity = typeof updater === 'function' ? updater(city) : updater;
-
         set({ city: newCity });
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(newCity); // Save Locally
-        }
 
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { city: newCity });
+        if (currentUser) {
+            setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true })
+                .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${currentUser.uid}`));
         }
     },
 
     addLog: async (type, message, change, unit) => {
-        const { currentUser, platformModules } = get();
+        const { currentUser } = get();
         const logId = Math.random().toString(36).substring(2, 11);
-        const newLog: ActivityLog = {
-            id: logId,
-            timestamp: new Date().toISOString(),
+        const newLog = {
+            timestamp: Timestamp.now(),
             type,
             message,
             change,
             unit
         };
 
-        set(state => ({
-            logs: [newLog, ...state.logs].slice(0, 50)
-        }));
-
-        if (platformModules?.logRepository) {
-            platformModules.logRepository.add(newLog); // Save Locally
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('LOG_ADD', newLog);
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid, 'logs', logId), newLog);
+        } else {
+            set(state => ({
+                logs: [{ ...newLog, id: logId, timestamp: new Date().toISOString() } as ActivityLog, ...state.logs].slice(0, 50)
+            }));
         }
     },
 
     addHabit: async (title, type) => {
-        const { currentUser, platformModules } = get();
+        const { currentUser } = get();
+        const goldBase = type === 'daily' ? 10 : type === 'weekly' ? 50 : 200;
+        const expBase = type === 'daily' ? 50 : type === 'weekly' ? 250 : 1000;
+        const target = type === 'daily' ? 1 : type === 'weekly' ? 3 : 10;
         const habitId = Math.random().toString(36).substring(2, 11);
 
-        const newHabit: Habit = {
-            id: habitId,
+        const newHabit = {
             title,
             type,
             completedDates: [],
-            createdAt: new Date().toISOString(),
-            targetCount: type === 'daily' ? 1 : type === 'weekly' ? 3 : 10,
-            goldReward: type === 'daily' ? 10 : type === 'weekly' ? 50 : 200,
-            expReward: type === 'daily' ? 50 : type === 'weekly' ? 250 : 1000,
+            createdAt: Timestamp.now(),
+            targetCount: target,
+            goldReward: goldBase,
+            expReward: expBase,
             difficulty: 1,
             currentStreak: 0
         };
 
-        set(state => ({ habits: [...state.habits, newHabit] }));
-        if (platformModules?.habitRepository) {
-            platformModules.habitRepository.save(newHabit); // Save Locally
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('HABIT_SET', newHabit);
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid, 'habits', habitId), newHabit);
+        } else {
+            set(state => ({
+                habits: [...state.habits, { ...newHabit, id: habitId, createdAt: new Date().toISOString() } as Habit]
+            }));
         }
     },
 
     completeHabit: async (id) => {
-        const { stats, habits, currentUser, platformModules, addLog } = get();
+        const { stats, habits, currentUser, addLog } = get();
         const today = new Date().toISOString().split('T')[0];
         const h = habits.find(habit => habit.id === id);
         if (!h || h.completedDates.includes(today)) return;
 
+        const completionsThisPeriod = h.completedDates.length;
+        const overAchievement = completionsThisPeriod >= h.targetCount;
+
         const momentumMult = 1 + (stats.momentum / 100) * 0.5;
-        const finalMultiplier = (h.completedDates.length >= h.targetCount ? 0.5 : 1) * momentumMult;
+        const baseMultiplier = overAchievement ? 0.5 : 1;
+        const finalMultiplier = baseMultiplier * momentumMult;
 
         let newExp = stats.exp + Math.floor(h.expReward * finalMultiplier);
         let newLevel = stats.level;
@@ -319,105 +255,89 @@ export const useCivStore = create<CivState>((set, get) => ({
             currentStreak: h.currentStreak + 1,
         };
 
-        // Update Local State & DB
-        set({ stats: updatedStats, habits: habits.map(hab => hab.id === id ? updatedHabit : hab) });
-        if (platformModules?.statsRepository) {
-            platformModules.statsRepository.save(updatedStats);
-        }
-        if (platformModules?.habitRepository) {
-            platformModules.habitRepository.save(updatedHabit);
-        }
+        if (currentUser) {
+            const batch = writeBatch(db);
+            batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, updatedAt: serverTimestamp() }, { merge: true });
 
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { stats: updatedStats });
-            platformModules.syncEngine.queueAction('HABIT_SET', updatedHabit);
-
-            if (updatedStats.level !== stats.level) {
-                platformModules.syncEngine.queueAction('LEADERBOARD_UPDATE', {
-                    level: updatedStats.level,
-                    userId: currentUser.uid,
-                    displayName: currentUser.displayName,
-                    photoURL: currentUser.photoURL
-                });
-            }
+            const { id: _, ...habitData } = updatedHabit;
+            batch.set(doc(db, 'users', currentUser.uid, 'habits', id), {
+                ...habitData,
+                createdAt: h.createdAt ? (typeof h.createdAt === 'string' ? Timestamp.fromDate(new Date(h.createdAt)) : h.createdAt) : serverTimestamp()
+            });
+            await batch.commit();
+        } else {
+            set({ stats: updatedStats, habits: habits.map(habit => habit.id === id ? updatedHabit : habit) });
         }
 
         addLog('habit', `Completed: ${h.title}`, h.goldReward, 'gold');
     },
 
     updateHabit: async (id, updates) => {
-        const { currentUser, habits, platformModules } = get();
-        const updatedHabits = habits.map(h => h.id === id ? { ...h, ...updates } : h);
-        const updatedHabit = updatedHabits.find(h => h.id === id);
-
-        set({ habits: updatedHabits });
-        if (updatedHabit && platformModules?.habitRepository) {
-            platformModules.habitRepository.save(updatedHabit);
-        }
-
-        if (currentUser && updatedHabit && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('HABIT_SET', updatedHabit);
+        const { currentUser, habits } = get();
+        if (currentUser) {
+            const { id: _, ...dataToSave } = updates as any;
+            await setDoc(doc(db, 'users', currentUser.uid, 'habits', id), dataToSave, { merge: true });
+        } else {
+            set({ habits: habits.map(h => h.id === id ? { ...h, ...updates } : h) });
         }
     },
 
     deleteHabit: async (id) => {
-        const { currentUser, habits, platformModules } = get();
-        set({ habits: habits.filter(h => h.id !== id) });
-        if (platformModules?.habitRepository) {
-            platformModules.habitRepository.delete(id);
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('HABIT_DELETE', { habitId: id });
+        const { currentUser, habits } = get();
+        if (currentUser) {
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'habits', id));
+        } else {
+            set({ habits: habits.filter(h => h.id !== id) });
         }
     },
 
     endDay: async () => {
-        const { stats, city, habits, currentUser, platformModules, addLog, addHabit } = get();
+        const { stats, city, habits, currentUser, addLog, addHabit } = get();
         const today = new Date().toISOString().split('T')[0];
 
         const { updatedStats, updatedCity, report, resetHabitIds } = processEndDay(stats, city, habits, today);
 
         if (report.event) {
-            addHabit(`Mitigasi: ${report.event.name}`, 'daily');
+            await addHabit(`Mitigasi: ${report.event.name}`, 'daily');
         }
 
-        const updatedHabits = habits.map(h => resetHabitIds.includes(h.id) ? { ...h, currentStreak: 0 } : h);
+        if (currentUser) {
+            try {
+                const batch = writeBatch(db);
+                batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, city: updatedCity, updatedAt: serverTimestamp() }, { merge: true });
 
-        // Local Save
-        set({ stats: updatedStats, city: updatedCity, habits: updatedHabits });
-        if (platformModules?.statsRepository) {
-            platformModules.statsRepository.save(updatedStats);
-        }
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(updatedCity);
-        }
-        if (platformModules?.habitRepository) {
-            updatedHabits.forEach(h => platformModules.habitRepository.save(h));
-        }
+                batch.set(doc(db, 'leaderboard', currentUser.uid), {
+                    userId: currentUser.uid,
+                    displayName: currentUser.displayName || 'Survivor',
+                    photoURL: currentUser.photoURL || '',
+                    level: updatedStats.level,
+                    population: updatedCity.population,
+                    currentEra: updatedCity.currentEra,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
 
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { stats: updatedStats, city: updatedCity });
-            platformModules.syncEngine.queueAction('LEADERBOARD_UPDATE', {
-                level: updatedStats.level,
-                population: updatedCity.population,
-                currentEra: updatedCity.currentEra
-            });
-            resetHabitIds.forEach(id => {
-                const h = updatedHabits.find(hab => hab.id === id);
-                if (h) platformModules.syncEngine.queueAction('HABIT_SET', h);
-            });
+                resetHabitIds.forEach(id => {
+                    batch.set(doc(db, 'users', currentUser.uid, 'habits', id), { currentStreak: 0 }, { merge: true });
+                });
+
+                await batch.commit();
+            } catch (e) {
+                handleFirestoreError(e, OperationType.WRITE, `users/${currentUser.uid}`);
+            }
+        } else {
+            set({ stats: updatedStats, city: updatedCity, habits: habits.map(h => resetHabitIds.includes(h.id) ? { ...h, currentStreak: 0 } : h) });
         }
 
         return report;
     },
 
     deployBuilding: async (buildingTypeId, silverCost, x, y) => {
-        const { stats, city, currentUser, platformModules, addLog } = get();
+        const { stats, city, currentUser, addLog } = get();
         if (stats.silver < silverCost) return false;
 
+        const buildingId = Math.random().toString(36).substring(2, 11);
         const newBuilding: PlacedBuilding = {
-            id: Math.random().toString(36).substring(2, 11),
+            id: buildingId,
             buildingTypeId,
             gridX: x,
             gridY: y,
@@ -426,20 +346,22 @@ export const useCivStore = create<CivState>((set, get) => ({
             createdAt: new Date().toISOString()
         };
 
-        const newCity = { ...city, buildings: [...(city.buildings || []), newBuilding] };
+        const newCity = {
+            ...city,
+            buildings: [...(city.buildings || []), newBuilding]
+        };
         const newStats = { ...stats, silver: stats.silver - silverCost };
 
-        set({ stats: newStats, city: newCity });
-        if (platformModules?.statsRepository) {
-            platformModules.statsRepository.save(newStats);
-        }
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(newCity);
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { stats: newStats, city: newCity });
-            platformModules.syncEngine.queueAction('LEADERBOARD_UPDATE', { population: newCity.population });
+        if (currentUser) {
+            const batch = writeBatch(db);
+            batch.set(doc(db, 'users', currentUser.uid), { stats: newStats, city: newCity, updatedAt: serverTimestamp() }, { merge: true });
+            batch.set(doc(db, 'leaderboard', currentUser.uid), {
+                population: newCity.population,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            await batch.commit();
+        } else {
+            set({ stats: newStats, city: newCity });
         }
 
         addLog('city', `Constructed ${buildingTypeId}`, -silverCost, 'silver');
@@ -447,25 +369,21 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     upgradeBuilding: async (id, silverCost) => {
-        const { stats, city, currentUser, platformModules, addLog } = get();
+        const { stats, city, currentUser, addLog } = get();
         if (stats.silver < silverCost) return false;
 
         const newCity = {
             ...city,
-            buildings: (city.buildings || []).map(b => b.id === id ? { ...b, level: b.level + 1 } : b)
+            buildings: (city.buildings || []).map(b =>
+                b.id === id ? { ...b, level: b.level + 1 } : b
+            )
         };
         const newStats = { ...stats, silver: stats.silver - silverCost };
 
-        set({ stats: newStats, city: newCity });
-        if (platformModules?.statsRepository) {
-            platformModules.statsRepository.save(newStats);
-        }
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(newCity);
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { stats: newStats, city: newCity });
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid), { stats: newStats, city: newCity, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+            set({ stats: newStats, city: newCity });
         }
 
         addLog('city', `Upgraded building`, -silverCost, 'silver');
@@ -473,23 +391,23 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     removeBuilding: async (id) => {
-        const { city, currentUser, platformModules, addLog } = get();
-        const newCity = { ...city, buildings: (city.buildings || []).filter(b => b.id !== id) };
+        const { stats, city, currentUser, addLog } = get();
+        const newCity = {
+            ...city,
+            buildings: (city.buildings || []).filter(b => b.id !== id)
+        };
 
-        set({ city: newCity });
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(newCity);
-        }
-
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { city: newCity });
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+            set({ city: newCity });
         }
 
         addLog('city', `Removed building`, 0, 'silver');
     },
 
     unlockEvolution: async (branchId) => {
-        const { city, currentUser, platformModules } = get();
+        const { stats, city, currentUser, addLog } = get();
         if (city.unlockedEvolutions?.includes(branchId)) return false;
 
         const newCity = {
@@ -497,16 +415,13 @@ export const useCivStore = create<CivState>((set, get) => ({
             unlockedEvolutions: [...(city.unlockedEvolutions || []), branchId]
         };
 
-        set({ city: newCity });
-        if (platformModules?.CityRepository) {
-            platformModules.CityRepository.saveCity(newCity);
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+            set({ city: newCity });
         }
 
-        if (currentUser && platformModules?.syncEngine) {
-            platformModules.syncEngine.queueAction('UPDATE_PROFILE', { city: newCity });
-        }
-
-        get().addLog('system', `Evolution unlocked: ${branchId}`, 0, 'exp');
+        addLog('system', `Evolution unlocked: ${branchId}`, 0, 'exp');
         return true;
     }
 }));
