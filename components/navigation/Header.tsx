@@ -1,8 +1,8 @@
+import { useCivStore } from '@/store';
+import { COLORS, THEME } from '@/theme';
+import { Coins, DollarSign, Heart } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Heart, Coins, DollarSign } from 'lucide-react-native';
-import { useCivStore } from '../../core/progression/store';
-import { COLORS, THEME } from '../theme';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
     zIndex: 50,
     borderBottomWidth: 4,
     borderBottomColor: COLORS.dark,
-    // Add shadow equivalent for neo-shadow
     shadowColor: COLORS.dark,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.2,

@@ -1,53 +1,57 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
+import { Header } from '@/components/navigation/Header';
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#1F2228', // brand-dark
-        tabBarInactiveTintColor: '#9CA3AF', // gray-400
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#1F2228',
-          borderTopWidth: 4,
-          height: 84,
-          paddingTop: 8,
-          paddingBottom: 10,
-          shadowColor: '#1F2228',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 4,
-          elevation: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: '900',
-          letterSpacing: 0.8,
-          textTransform: 'uppercase',
-          marginTop: 2,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 2,
-        },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Realita',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons
-              name={focused ? 'home' : 'home-outline'}
-              size={size + 4}
-              color={color}
-              style={{ fontWeight: focused ? 'bold' : 'normal' }}
-            />
-          ),
+    <View style={styles.container}>
+      <Header />
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: '#1F2228', // brand-dark
+          tabBarInactiveTintColor: '#9CA3AF', // gray-400
+          headerShown: false,
+          tabBarButton: HapticTab,
+          tabBarStyle: {
+            backgroundColor: '#FFFFFF',
+            borderTopColor: '#1F2228',
+            borderTopWidth: 4,
+            height: 84,
+            paddingTop: 8,
+            paddingBottom: 10,
+            shadowColor: '#1F2228',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 4,
+            elevation: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 9,
+            fontWeight: '900',
+            letterSpacing: 0.8,
+            textTransform: 'uppercase',
+            marginTop: 2,
+          },
+          tabBarItemStyle: {
+            paddingVertical: 2,
+          },
+        }}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Realita',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                size={size + 4}
+                color={color}
+                style={{ fontWeight: focused ? 'bold' : 'normal' }}
+              />
+            ),
         }}
       />
       <Tabs.Screen
@@ -93,5 +97,13 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+});

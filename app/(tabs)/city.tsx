@@ -1,23 +1,29 @@
+import { CityScreen } from '@/features/simulation/screens/CityScreen';
+import { useCivStore } from '@/store';
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import CityScreen from '@/features/simulation/screens/CityScreen';
+import { StyleSheet, View } from 'react-native';
 
 export default function CityTab() {
-    return <CityScreen />;
+    const { city, stats, deployBuilding, upgradeBuilding, removeBuilding } = useCivStore();
+
+    return (
+        <View style={styles.container}>
+            <CityScreen
+                city={city}
+                stats={stats}
+                onDeploy={deployBuilding}
+                onUpgrade={upgradeBuilding}
+                onRemove={removeBuilding}
+                onSwitchTab={() => {}}
+            />
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingTop: 80,
         backgroundColor: '#FFFFFF',
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 16,
     },
 });

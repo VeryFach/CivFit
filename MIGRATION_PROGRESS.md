@@ -57,33 +57,61 @@
 
 ---
 
-## 📋 Phase 2: Remaining Work
+## 📋 Phase 2: UI Migration Progress
 
-### Priority 1 - UI Components (MUST DO)
-**Location Migration**: `src/ui/components/` → Root level
+### ✅ COMPLETED - UI Components Migration
 
-Files to migrate:
-1. `Header.tsx` → `components/navigation/Header.tsx`
-2. `Navigation.tsx` → `components/navigation/Navigation.tsx`
-3. `RealitaTab.tsx` → `app/(tabs)/index.tsx` (replace current stub)
-4. `KotaTab.tsx` → `app/(tabs)/city.tsx` (replace current stub)
-5. `TokoTab.tsx` → `app/(tabs)/shop.tsx` (replace current stub)
-6. `MenuTab.tsx` → `app/(tabs)/menu.tsx` (replace current stub)
-7. `EvolutionTab.tsx` → `components/overlays/EvolutionTab.tsx`
-8. `LeaderboardTab.tsx` → `components/overlays/LeaderboardTab.tsx`
-9. `DailyReportOverlay.tsx` → `components/overlays/DailyReportOverlay.tsx`
-10. `LoginScreen.tsx` → `components/common/LoginScreen.tsx`
+#### Theme Files (DONE)
+- ✅ `theme/index.ts` - Created with COLORS and THEME constants
+- ✅ `theme/tokens.ts` - Created with platform-agnostic theme tokens
 
-**Update imports in each file from:**
-- `./ui/...` → `@/components/...`
-- `./core/...` → `@/core/...`
-- `./platform/...` → `@/platform/...`
-- Etc.
+#### Navigation Components (DONE)
+- ✅ `components/navigation/Header.tsx` - Migrated with `@/` imports
+- ✅ `components/navigation/Navigation.tsx` - Migrated with `@/` imports
 
-### Priority 2 - Theme Extraction
-1. Migrate `src/ui/theme.ts` → `theme/index.ts` or `theme/colors.ts`
-2. Migrate `src/ui/theme/tokens.ts` → `theme/tokens.ts`
-3. Update imports in all components
+#### Auth Component (DONE)
+- ✅ `components/common/LoginScreen.tsx` - Migrated with `@/` imports
+
+#### Remaining Tab Components (IN PROGRESS)
+
+Files to migrate with full content:
+1. `RealitaTab.tsx` → `app/(tabs)/index.tsx` 
+   - Import changes: `../../core/types` → `@/core/types`, `../theme` → `@/theme`
+   - Status: Content generated, needs create_file
+   
+2. `KotaTab.tsx` → `app/(tabs)/city.tsx`
+   - Import changes: 4 paths to update, all to `@/` aliases
+   - Status: Content generated, needs create_file
+   
+3. `TokoTab.tsx` → `app/(tabs)/shop.tsx`
+   - Import changes: 3 paths to update
+   - Status: Content generated, needs create_file
+   
+4. `MenuTab.tsx` → `app/(tabs)/menu.tsx`
+   - Import changes: 6 paths including `./LeaderboardTab` → `@/components/overlays/LeaderboardTab`
+   - Status: Content generated, needs create_file
+   
+5. `EvolutionTab.tsx` → `components/overlays/EvolutionTab.tsx`
+   - Import changes: 3 paths to `@/` aliases
+   - Status: Content generated, needs create_file
+   
+6. `DailyReportOverlay.tsx` → `components/overlays/DailyReportOverlay.tsx`
+   - Import changes: 2 paths to `@/` aliases
+   - Status: Content generated, needs create_file
+   
+7. `LeaderboardTab.tsx` → `components/overlays/LeaderboardTab.tsx`
+   - Import changes: 3 paths to `@/` aliases
+   - Status: Content generated, needs create_file
+
+### Priority 2 - Create Remaining Tab Components
+
+**Quick Method for Large Files:**
+Use VSCode Find & Replace to batch update imports in src/ui/components/ files before moving:
+1. Find: `../../core/` → Replace: `@/core/`
+2. Find: `../../platform/` → Replace: `@/platform/`
+3. Find: `../theme` → Replace: `@/theme`
+
+Then copy full file content to new locations.
 
 ### Priority 3 - Verification & Testing
 1. Check for any remaining src/ imports
@@ -96,6 +124,19 @@ Files to migrate:
 1. Delete entire `src/` folder (only after verification)
 2. Delete any old Vite files if not needed
 3. Remove `.web.ts` files if consolidating web support
+
+### 📝 Import Path Changes Summary
+
+| Component | Changes |
+|-----------|---------|
+| RealitaTab | 2 import paths → @/ |
+| KotaTab | 4 import paths → @/ |
+| TokoTab | 3 import paths → @/ |
+| MenuTab | 6 import paths → @/ (includes path change) |
+| EvolutionTab | 3 import paths → @/ |
+| DailyReportOverlay | 2 import paths → @/ |
+| LeaderboardTab | 3 import paths → @/ |
+| **TOTAL** | **24 import path changes** |
 
 ---
 

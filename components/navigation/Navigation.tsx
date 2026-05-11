@@ -1,7 +1,7 @@
+import { COLORS, THEME } from '@/theme';
+import { Home, Map, Settings, ShoppingBag } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Home, Map, ShoppingBag, Settings } from 'lucide-react-native';
-import { COLORS, THEME } from '../theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface NavigationProps {
   currentTab: string;

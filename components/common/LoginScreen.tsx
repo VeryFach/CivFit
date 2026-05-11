@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { signInWithGoogle } from '@/services/firebase';
+import { COLORS, THEME } from '@/theme';
 import { LogIn, Sparkles } from 'lucide-react-native';
-import { signInWithGoogle } from '../../platform/api/firebase';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
-import { COLORS, THEME } from '../theme';
 
 export function LoginScreen() {
   return (
