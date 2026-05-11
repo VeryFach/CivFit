@@ -1,0 +1,135 @@
+import React from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Heart, Coins, DollarSign } from 'lucide-react-native';
+import { useCivStore } from '../../core/progression/store';
+import { COLORS, THEME } from '../theme';
+
+const { width } = Dimensions.get('window');
+
+export function Header() {
+  const stats = useCivStore((state) => state.stats);
+
+  const expProgress = (stats.exp / stats.maxExp) * 100;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.leftGroup}>
+        {/* HP Badge */}
+        <View style={styles.badge}>
+          <Heart size={14} color={COLORS.red} fill={COLORS.red} />
+          <Text style={styles.badgeText}>{stats.hp}/{stats.maxHp} HP</Text>
+        </View>
+
+        {/* LVL Badge */}
+        <View style={styles.badge}>
+          <Text style={styles.lvlText}>LVL {stats.level}</Text>
+          <View style={styles.progressBarBg}>
+            <View 
+              style={[
+                styles.progressBarFill, 
+                { width: `${expProgress}%` }
+              ]} 
+            />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.rightGroup}>
+        {/* Gold */}
+        <View style={[styles.currencyBadge, { backgroundColor: COLORS.yellow }]}>
+          <Coins size={14} color={COLORS.dark} />
+          <Text style={styles.currencyText}>{stats.gold.toLocaleString()}</Text>
+        </View>
+
+        {/* Silver */}
+        <View style={[styles.currencyBadge, { backgroundColor: COLORS.purple }]}>
+          <DollarSign size={14} color={COLORS.white} />
+          <Text style={[styles.currencyText, { color: COLORS.white }]}>
+            {stats.silver.toLocaleString()}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: COLORS.red,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    zIndex: 50,
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.dark,
+    // Add shadow equivalent for neo-shadow
+    shadowColor: COLORS.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  badge: {
+    backgroundColor: COLORS.white,
+    ...THEME.neoBorder,
+    ...THEME.neoShadowSm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: COLORS.dark,
+  },
+  lvlText: {
+    fontSize: 10,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  progressBarBg: {
+    width: 60,
+    height: 10,
+    backgroundColor: COLORS.gray,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: COLORS.dark,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.teal,
+  },
+  currencyBadge: {
+    ...THEME.neoBorder,
+    ...THEME.neoShadowSm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  currencyText: {
+    fontWeight: '900',
+    fontSize: 12,
+  },
+});

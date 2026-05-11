@@ -1,53 +1,136 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+import {
+  Platform,
+  StyleSheet,
+} from 'react-native';
 
-import { Platform } from 'react-native';
+export const COLORS = {
+  bg: '#FDF6E3',
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+  dark: '#2D3436',
 
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+  red: '#FF6B6B',
+
+  teal: '#4ECDC4',
+
+  yellow: '#FFE66D',
+
+  purple: '#A29BFE',
+
+  white: '#FFFFFF',
+
+  gray: '#F0F2F5',
+
+  text: '#11181C',
+
+  muted: '#687076',
 };
 
-export const Fonts = Platform.select({
+export const FONTS = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
-  default: {
-    sans: 'normal',
+
+  android: {
+    sans: 'sans-serif',
     serif: 'serif',
-    rounded: 'normal',
+    rounded: 'sans-serif',
     mono: 'monospace',
   },
+
+  default: {
+    sans: 'sans-serif',
+    serif: 'serif',
+    rounded: 'sans-serif',
+    mono: 'monospace',
+  },
+
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    sans:
+      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+
+    serif:
+      "Georgia, 'Times New Roman', serif",
+
+    rounded:
+      "'SF Pro Rounded', sans-serif",
+
+    mono:
+      "SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  },
+});
+
+export const THEME = StyleSheet.create({
+  neoBorder: {
+    borderWidth: 2,
+    borderColor: COLORS.dark,
+  },
+
+  neoBorderLg: {
+    borderWidth: 4,
+    borderColor: COLORS.dark,
+  },
+
+  neoShadowSm: {
+    shadowColor: COLORS.dark,
+
+    shadowOffset: {
+      width: 2,
+      height: 2,
+    },
+
+    shadowOpacity: 1,
+
+    shadowRadius: 0,
+
+    elevation: 2,
+  },
+
+  neoShadow: {
+    shadowColor: COLORS.dark,
+
+    shadowOffset: {
+      width: 4,
+      height: 4,
+    },
+
+    shadowOpacity: 1,
+
+    shadowRadius: 0,
+
+    elevation: 4,
+  },
+
+  neoShadowLg: {
+    shadowColor: COLORS.dark,
+
+    shadowOffset: {
+      width: 8,
+      height: 8,
+    },
+
+    shadowOpacity: 1,
+
+    shadowRadius: 0,
+
+    elevation: 8,
+  },
+
+  textBlack: {
+    fontWeight: '900',
+  },
+
+  textBold: {
+    fontWeight: '700',
+  },
+
+  italic: {
+    fontStyle: 'italic',
+  },
+
+  uppercase: {
+    textTransform: 'uppercase',
   },
 });

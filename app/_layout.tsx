@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { CivfitProvider } from '@/src/state/civfit-store';
+import { CivfitProvider } from '@/store/CivfitProvider';
 
 export const unstable_settings = {
   anchor: '(tabs)',
