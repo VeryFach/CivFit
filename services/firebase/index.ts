@@ -1,67 +1,201 @@
 /**
- * Firebase configuration and initialization
- * Handles auth state and Firestore connection
+ * Firebase configuration
  */
+
 import firebaseConfig from '@/firebase-applet-config.json';
-import { initializeApp } from 'firebase/app';
+
+import {
+    getApp,
+    getApps,
+    initializeApp,
+} from 'firebase/app';
+
 import {
     browserLocalPersistence,
     getAuth,
+    getReactNativePersistence,
     GoogleAuthProvider,
+    initializeAuth,
     setPersistence,
-    signInWithPopup
 } from 'firebase/auth';
+
 import {
     doc,
-    getDocFromServer,
+    getDoc,
+    getFirestore,
     initializeFirestore,
     persistentLocalCache,
-    persistentMultipleTabManager
+    persistentMultipleTabManager,
 } from 'firebase/firestore';
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+    Platform,
+} from 'react-native';
 
-// Setup persistence for web/mobile
-try {
-    // For web platform
-    setPersistence(auth, browserLocalPersistence).catch(() => {
-        // Fallback if not supported
+
+// ======================================================
+// APP
+// ======================================================
+
+const app =
+    getApps().length === 0
+        ? initializeApp(firebaseConfig)
+        : getApp();
+
+
+// ======================================================
+// AUTH
+// ======================================================
+
+const isBrowser =
+    typeof window !== 'undefined';
+
+let auth;
+
+if (Platform.OS === 'web' && isBrowser) {
+    auth = getAuth(app);
+    setPersistence(
+        auth,
+        browserLocalPersistence
+    ).catch((error) => {
+        console.warn(
+            '[Firebase] Auth persistence failed:',
+            error
+        );
     });
-} catch (error) {
-    // Persistence setup failed - continue without it
+} else {
+    // React Native with AsyncStorage persistence
+    const persistence = getReactNativePersistence(AsyncStorage);
+    auth = initializeAuth(app, {
+        persistence,
+    });
 }
 
-// Initialize Firestore with persistent cache for mobile-first behavior
-export const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-    })
-}, firebaseConfig.firestoreDatabaseId);
+export { auth };
 
-export const googleProvider = new GoogleAuthProvider();
 
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+// ======================================================
+// FIRESTORE
+// ======================================================
 
-// CRITICAL: Validate Connection to Firestore (delayed initialization)
-async function testConnection() {
+let firestoreInstance;
+
+try {
+
+    firestoreInstance =
+
+        Platform.OS === 'web' &&
+        isBrowser
+
+            ? initializeFirestore(
+                  app,
+                  {
+                      databaseId:
+                          firebaseConfig.firestoreDatabaseId,
+
+                      localCache:
+                          persistentLocalCache({
+
+                              tabManager:
+                                  persistentMultipleTabManager(),
+                          }),
+                  }
+              )
+
+            : initializeFirestore(
+                  app,
+                  {
+                      databaseId:
+                          firebaseConfig.firestoreDatabaseId,
+                  }
+              );
+
+} catch (error) {
+
+    console.warn(
+        '[Firebase] Firestore fallback:',
+        error
+    );
+
+    firestoreInstance =
+        getFirestore(app);
+}
+
+export const db =
+    firestoreInstance;
+
+
+// ======================================================
+// GOOGLE PROVIDER
+// ======================================================
+
+export const googleProvider =
+    new GoogleAuthProvider();
+
+googleProvider.setCustomParameters({
+
+    prompt: 'select_account',
+});
+
+
+// ======================================================
+// FIRESTORE TEST
+// ======================================================
+
+async function testConnection(
+    retries = 3
+) {
+
     try {
-        const result = await getDocFromServer(doc(db, 'test', 'connection'));
-        console.log('[Firebase] Connection test passed');
-        return true;
-    } catch (error: any) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-            console.error("[Firebase] Client is offline - check your connection");
+
+        const connectionRef =
+            doc(
+                db,
+                'test',
+                'connection'
+            );
+
+        const snapshot =
+            await getDoc(
+                connectionRef
+            );
+
+        if (snapshot.exists()) {
+
+            console.log(
+                '[Firebase] Connection test passed'
+            );
+
         } else {
-            console.warn('[Firebase] Connection test failed:', error?.message);
+
+            console.warn(
+                '[Firebase] test/connection document not found'
+            );
         }
-        return false;
+
+    } catch (error: any) {
+
+        console.warn(
+            '[Firebase] Connection failed:',
+            error?.message || error
+        );
+
+        if (retries > 0) {
+
+            setTimeout(() => {
+
+                testConnection(
+                    retries - 1
+                );
+
+            }, 2000);
+        }
     }
 }
 
-// Delay connection test to allow app to initialize
 setTimeout(() => {
-    testConnection().catch(() => {
-        console.warn('[Firebase] Connection test skipped');
-    });
-}, 1000);
+
+    testConnection();
+
+}, 2000);

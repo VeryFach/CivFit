@@ -10,7 +10,7 @@ import { CivfitProvider } from '@/store/CivfitProvider';
 import { useCivStore } from '@/store/appStore';
 
 export const unstable_settings = {
-  initialRouteName: '(app)',
+  // Remove initialRouteName - let router handle it dynamically
 };
 
 /**
@@ -84,7 +84,7 @@ export default function RootLayout() {
 
           {/* App routes */}
           <Stack.Screen
-            name="(app)"
+            name="(tabs)"
             options={{
               title: 'App',
             }}

@@ -1,10 +1,20 @@
-// Re-export Firebase services from submodules
-export { handleFirestoreError, OperationType } from './firebase/firestoreUtils';
-export {
-    auth,
-    db,
-    googleProvider,
-    signInWithGoogle
-} from './firebase/index';
+// Re-export Firebase services
 
-    
+export {
+
+    handleFirestoreError,
+
+    OperationType,
+
+} from './firebase/firestoreUtils';
+
+
+export {
+
+    auth,
+
+    db,
+
+    googleProvider,
+
+} from './firebase/index';

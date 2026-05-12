@@ -1,7 +1,6 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import Reality from '@/features/habits/reality';
-import endDay from '@/features/progression/DailyReportOverlay';
 import { useCivStore } from '@/core/progression/store';
 
 export default function RealitaTab() {
