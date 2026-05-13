@@ -20,6 +20,10 @@ import {
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
 
+type GachaRewardType = 'gold' | 'silver' | 'exp' | 'hp';
+type GachaReward = { type: GachaRewardType; amount: number; message: string } | null;
+type ConversionStatus = { show: boolean; success: boolean; message: string; type: 'gold' | 'silver' } | null;
+
 interface CivState {
     currentUser: User | null;
     loading: boolean;
