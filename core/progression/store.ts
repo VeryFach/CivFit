@@ -336,9 +336,9 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     deployBuilding: async (buildingTypeId, silverCost, x, y) => {
         const { stats, city, currentUser, addLog } = get();
-        
+
         console.log('[deployBuilding] Attempting deployment', { buildingTypeId, silverCost, x, y, currentSilver: stats.silver });
-        
+
         if (stats.silver < silverCost) {
             console.warn('[deployBuilding] Deployment FAILED: Insufficient silver', { required: silverCost, current: stats.silver });
             return false;
@@ -437,31 +437,43 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     cleanOutOfBoundBuildings: async () => {
         const { city, currentUser } = get();
-        const outOfBounds = (city.buildings || []).filter(b => 
-            b.gridX < 0 || b.gridX >= GRID_SIZE || b.gridY < 0 || b.gridY >= GRID_SIZE
+        const originalBuildings = city.buildings || [];
+
+        // Filter bangunan yang koordinatnya valid
+        const cleanedBuildings = originalBuildings.filter(b =>
+            b.gridX >= 0 && b.gridX < GRID_SIZE &&
+            b.gridY >= 0 && b.gridY < GRID_SIZE
         );
 
-        if (outOfBounds.length === 0) {
+        const outOfBoundsCount = originalBuildings.length - cleanedBuildings.length;
+        if (outOfBoundsCount === 0) {
             console.log('[cleanOutOfBoundBuildings] No out-of-bounds buildings found');
             return 0;
         }
 
-        const cleanedBuildings = city.buildings.filter(b =>
-            b.gridX >= 0 && b.gridX < GRID_SIZE && b.gridY >= 0 && b.gridY < GRID_SIZE
+        // Log bangunan yang dihapus (untuk debugging)
+        const removedBuildings = originalBuildings.filter(b => !cleanedBuildings.includes(b));
+        console.warn(`[cleanOutOfBoundBuildings] Removing ${outOfBoundsCount} out-of-bounds buildings:`,
+            removedBuildings.map(b => ({
+                id: b.id,
+                coords: `(${b.gridX},${b.gridY})`,
+                gridSize: `[0..${GRID_SIZE - 1}]`
+            }))
         );
 
         const newCity = { ...city, buildings: cleanedBuildings };
 
-        console.warn(`[cleanOutOfBoundBuildings] Removing ${outOfBounds.length} out-of-bounds buildings:`, 
-            outOfBounds.map(b => ({ id: b.id, coords: `(${b.gridX},${b.gridY})`, gridSize: `[0..${GRID_SIZE - 1}]` }))
-        );
-
+        // Simpan ke Firestore jika user login
         if (currentUser) {
-            await setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true });
-        } else {
-            set({ city: newCity });
+            await setDoc(doc(db, 'users', currentUser.uid),
+                { city: newCity, updatedAt: serverTimestamp() },
+                { merge: true }
+            );
         }
 
-        return outOfBounds.length;
+        // Update state lokal
+        set({ city: newCity });
+
+        return outOfBoundsCount;
     }
 }));
