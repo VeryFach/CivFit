@@ -1,38 +1,30 @@
-import React, { useState, useMemo, useRef } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    TextInput,
-    StyleSheet,
-    Animated,
-    Pressable,
-    useWindowDimensions,
-    SafeAreaView,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { CityState, UserStats, BuildingType, PlacedBuilding, Era } from '@/core/types';
-import { BUILDINGS, GRID_SIZE, ERAS_CONFIG } from '@/core/constants';
-import { calculateCitySummary, getHealthStatus, getHappinessStatus, getProductivityStatus, getBuildingOccupancy, getOccupancyStatus } from '@/core/simulation/cityUtils';
+import { BUILDINGS, ERAS_CONFIG, GRID_SIZE } from '@/core/constants';
+import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus } from '@/core/simulation/cityUtils';
+import { BuildingType, CityState, Era, PlacedBuilding, UserStats } from '@/core/types';
 import * as LucideIcons from 'lucide-react-native';
 import {
-    Hammer,
     AlertTriangle,
-    TrendingUp,
+    Coins,
+    Dna,
+    Hammer,
+    Navigation,
     Search,
     Trash2,
-    Navigation,
-    Coins,
-    X,
-    Dna,
-    Building2,
-    Thermometer,
-    Zap,
-    TrendingDown,
-    Activity,
+    TrendingUp,
+    X
 } from 'lucide-react-native';
-import Evolution from '@/features/evolution/evolution';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Animated,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
+} from 'react-native';
 
 // --- helper IconRenderer (sama seperti asli)
 const IconRenderer = ({ name, size = 24, color = '#000' }: { name: string; size?: number; color?: string }) => {
@@ -69,6 +61,15 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
         (city.buildings || []).forEach(b => {
             map[`${b.gridX},${b.gridY}`] = b;
         });
+        
+        // DEBUG: Log mismatched building types
+        const mismatched = (city.buildings || []).filter(b => !BUILDINGS.find(t => t.id === b.buildingTypeId));
+        if (mismatched.length > 0) {
+            console.warn('[CityTab] WARNING: Found mismatched building types:', 
+                mismatched.map(b => ({ id: b.id, buildingTypeId: b.buildingTypeId, availableIds: BUILDINGS.map(t => t.id) }))
+            );
+        }
+        
         return map;
     }, [city.buildings]);
 
@@ -103,7 +104,55 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
         }));
     }, [stats.level, filter, searchQuery, city.buildings.length]);
 
+    // DEBUG: Log buildings state changes
+    useEffect(() => {
+        console.log('[CityTab] Buildings state changed:', {
+            count: city.buildings.length,
+            buildings: city.buildings.map(b => ({
+                id: b.id,
+                buildingTypeId: b.buildingTypeId,
+                gridX: b.gridX,
+                gridY: b.gridY,
+                coords: `${b.gridX},${b.gridY}`,
+                level: b.level,
+                buildingTypeIdType: typeof b.buildingTypeId,
+                gridXType: typeof b.gridX,
+                gridYType: typeof b.gridY,
+            }))
+        });
+    }, [city.buildings]);
+
+    // UTILITY: Validate buildings data - log warning for out-of-bounds
+    const validateBuildingsData = () => {
+        const outOfBounds = (city.buildings || []).filter(b => 
+            b.gridX < 0 || b.gridX >= GRID_SIZE || b.gridY < 0 || b.gridY >= GRID_SIZE
+        );
+        
+        if (outOfBounds.length > 0) {
+            console.warn('[CityTab] ⚠️  Out-of-bounds buildings detected:', 
+                outOfBounds.map(b => ({ 
+                    id: b.id, 
+                    coords: `(${b.gridX},${b.gridY})`,
+                    gridSize: `[0..${GRID_SIZE - 1}]`
+                }))
+            );
+            console.warn('[CityTab] Recommendation: Clean invalid buildings from store or rebuild city grid');
+        }
+    };
+
+    // Validate on mount and when city changes
+    useEffect(() => {
+        validateBuildingsData();
+    }, [city.buildings]);
+
     const handleTileClick = (x: number, y: number) => {
+        // VALIDATION: Ensure coordinates are within grid bounds
+        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
+            console.warn(`[CityTab] Invalid coordinates: (${x},${y}) exceeds grid bounds [0..${GRID_SIZE - 1}]`);
+            return;
+        }
+
+        console.log(`[CityTab] Tile clicked: (${x},${y})`);
         const coordKey = `${x},${y}`;
         const building = buildingMap[coordKey];
 
@@ -165,6 +214,19 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                         {type && building && (
                             <>
                                 <IconRenderer name={type.iconName} size={Math.max(16, GRID_ITEM_SIZE * 0.3)} color="#1E293B" />
+                                {building.level > 1 && (
+                                    <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#14B8A6', borderRadius: 12, paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1, borderColor: '#0F172A' }}>
+                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#0F172A' }}>L{building.level}</Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
+                        {!type && building && (
+                            <>
+                                <View style={{ alignItems: 'center', gap: 4 }}>
+                                    <AlertTriangle size={Math.max(16, GRID_ITEM_SIZE * 0.3)} color="#EF4444" />
+                                    <Text style={{ fontSize: 8, fontWeight: '800', color: '#EF4444', textAlign: 'center' }}>?</Text>
+                                </View>
                                 {building.level > 1 && (
                                     <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#14B8A6', borderRadius: 12, paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1, borderColor: '#0F172A' }}>
                                         <Text style={{ fontSize: 8, fontWeight: '900', color: '#0F172A' }}>L{building.level}</Text>

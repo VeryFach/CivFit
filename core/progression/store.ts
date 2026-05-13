@@ -1,24 +1,23 @@
-import { create } from 'zustand';
-import { UserStats, Habit, CityState, ActivityLog, Era, HabitType, PlacedBuilding } from '../types';
-import { EXP_PER_LEVEL, DEFAULT_HP, BUILDINGS, DISASTERS, ERA_MILESTONES } from '../constants';
-import { calculateCitySummary } from '../simulation/cityUtils';
-import { processEndDay, DayReport } from './engine';
-import { auth, db } from '@/services/firebase/index';
-import {
-    doc,
-    setDoc,
-    onSnapshot,
-    collection,
-    query,
-    orderBy,
-    limit,
-    Timestamp,
-    serverTimestamp,
-    writeBatch,
-    deleteDoc
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
+import { auth, db } from '@/services/firebase/index';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    limit,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+    Timestamp,
+    writeBatch
+} from 'firebase/firestore';
+import { create } from 'zustand';
+import { DEFAULT_HP, EXP_PER_LEVEL, GRID_SIZE } from '../constants';
+import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '../types';
+import { DayReport, processEndDay } from './engine';
 
 type GachaRewardType = 'gold' | 'silver' | 'exp' | 'hp';
 type GachaReward = { type: GachaRewardType; amount: number; message: string } | null;
@@ -46,6 +45,7 @@ interface CivState {
     removeBuilding: (id: string) => Promise<void>;
     unlockEvolution: (branchId: string) => Promise<boolean>;
     addLog: (type: ActivityLog['type'], message: string, change: number, unit: ActivityLog['unit']) => Promise<void>;
+    cleanOutOfBoundBuildings: () => Promise<number>;
 }
 
 const INITIAL_STATS: UserStats = {
@@ -336,7 +336,13 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     deployBuilding: async (buildingTypeId, silverCost, x, y) => {
         const { stats, city, currentUser, addLog } = get();
-        if (stats.silver < silverCost) return false;
+        
+        console.log('[deployBuilding] Attempting deployment', { buildingTypeId, silverCost, x, y, currentSilver: stats.silver });
+        
+        if (stats.silver < silverCost) {
+            console.warn('[deployBuilding] Deployment FAILED: Insufficient silver', { required: silverCost, current: stats.silver });
+            return false;
+        }
 
         const buildingId = Math.random().toString(36).substring(2, 11);
         const newBuilding: PlacedBuilding = {
@@ -367,6 +373,7 @@ export const useCivStore = create<CivState>((set, get) => ({
             set({ stats: newStats, city: newCity });
         }
 
+        console.log('[deployBuilding] Deployment SUCCESS', { buildingId, buildingTypeId, coords: `${x},${y}`, newSilver: newStats.silver });
         addLog('city', `Constructed ${buildingTypeId}`, -silverCost, 'silver');
         return true;
     },
@@ -426,5 +433,35 @@ export const useCivStore = create<CivState>((set, get) => ({
 
         addLog('system', `Evolution unlocked: ${branchId}`, 0, 'exp');
         return true;
+    },
+
+    cleanOutOfBoundBuildings: async () => {
+        const { city, currentUser } = get();
+        const outOfBounds = (city.buildings || []).filter(b => 
+            b.gridX < 0 || b.gridX >= GRID_SIZE || b.gridY < 0 || b.gridY >= GRID_SIZE
+        );
+
+        if (outOfBounds.length === 0) {
+            console.log('[cleanOutOfBoundBuildings] No out-of-bounds buildings found');
+            return 0;
+        }
+
+        const cleanedBuildings = city.buildings.filter(b =>
+            b.gridX >= 0 && b.gridX < GRID_SIZE && b.gridY >= 0 && b.gridY < GRID_SIZE
+        );
+
+        const newCity = { ...city, buildings: cleanedBuildings };
+
+        console.warn(`[cleanOutOfBoundBuildings] Removing ${outOfBounds.length} out-of-bounds buildings:`, 
+            outOfBounds.map(b => ({ id: b.id, coords: `(${b.gridX},${b.gridY})`, gridSize: `[0..${GRID_SIZE - 1}]` }))
+        );
+
+        if (currentUser) {
+            await setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+            set({ city: newCity });
+        }
+
+        return outOfBounds.length;
     }
 }));

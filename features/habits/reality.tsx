@@ -9,20 +9,17 @@ import {
     StyleSheet,
     Dimensions,
     Animated,
-    LayoutAnimation,
-    UIManager,
+    KeyboardAvoidingView,
     Platform,
+    UIManager,
 } from 'react-native';
 import { Habit, HabitType } from '@/core/types';
 import {
-    CheckCircle2,
-    Circle,
     Plus,
     X,
     Trash2,
     Edit3,
     Calendar as CalendarIcon,
-    Filter,
     Layers,
 } from 'lucide-react-native';
 
@@ -60,7 +57,6 @@ export default function RealitaTab({
     const [view, setView] = useState<'habits' | 'calendar'>('habits');
     const [categoryFilter, setCategoryFilter] = useState<'all' | HabitType>('all');
 
-    // Animations for bottom sheet
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -72,8 +68,15 @@ export default function RealitaTab({
         ? activeHabits.filter(h => h.completedDates.includes(today)).length / activeHabits.length
         : 0;
 
-    const momentumStatus = momentum >= 80 ? 'Unstoppable' : momentum >= 50 ? 'Steady' : momentum >= 20 ? 'Slow' : 'Stalled';
-    const momentumColor = momentum >= 80 ? '#FBBF24' : momentum >= 50 ? '#14B8A6' : momentum >= 20 ? '#8B5CF6' : '#EF4444';
+    const momentumStatus =
+        momentum >= 80 ? 'Unstoppable' :
+        momentum >= 50 ? 'Steady' :
+        momentum >= 20 ? 'Slow' : 'Stalled';
+
+    const momentumColor =
+        momentum >= 80 ? '#FBBF24' :
+        momentum >= 50 ? '#14B8A6' :
+        momentum >= 20 ? '#8B5CF6' : '#EF4444';
 
     const handleAdd = () => {
         if (newHabit.trim()) {
@@ -123,10 +126,9 @@ export default function RealitaTab({
         const now = new Date();
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-        // Adjust for Monday first (web uses Sen=0? Web code uses Sen first, but getDay() returns 0=Sun, so we adjust)
-        const offset = firstDay === 0 ? 6 : firstDay - 1; // convert to Monday first
+        const offset = firstDay === 0 ? 6 : firstDay - 1;
 
-        const days = [];
+        const days: (number | null)[] = [];
         for (let i = 0; i < offset; i++) days.push(null);
         for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
@@ -194,7 +196,7 @@ export default function RealitaTab({
         );
     };
 
-    // Progress bar width animation
+    // Progress bar animations
     const completionWidth = useRef(new Animated.Value(0)).current;
     const momentumWidth = useRef(new Animated.Value(0)).current;
 
@@ -245,7 +247,13 @@ export default function RealitaTab({
                             <Text style={styles.statValue}>{Math.round(completionRate * 100)}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
-                            <Animated.View style={[styles.progressBarFill, { width: completionWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }), backgroundColor: '#14B8A6' }]} />
+                            <Animated.View style={[
+                                styles.progressBarFill,
+                                {
+                                    width: completionWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+                                    backgroundColor: '#14B8A6',
+                                },
+                            ]} />
                         </View>
                     </View>
                     <View style={styles.statItem}>
@@ -254,7 +262,13 @@ export default function RealitaTab({
                             <Text style={[styles.statValue, { color: momentumColor }]}>{momentum}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
-                            <Animated.View style={[styles.progressBarFill, { width: momentumWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }), backgroundColor: momentumColor }]} />
+                            <Animated.View style={[
+                                styles.progressBarFill,
+                                {
+                                    width: momentumWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+                                    backgroundColor: momentumColor,
+                                },
+                            ]} />
                         </View>
                     </View>
                 </View>
@@ -306,7 +320,7 @@ export default function RealitaTab({
                                 </View>
                                 <Text style={styles.emptyTitle}>Dunia Hampa?</Text>
                                 <Text style={styles.emptyDesc}>
-                                    Belum ada habit yang direncanakan. {"\n"}Mulai evolusi pertamamu!
+                                    Belum ada habit yang direncanakan.{'\n'}Mulai evolusi pertamamu!
                                 </Text>
                                 <TouchableOpacity style={styles.emptyButton} onPress={openBottomSheet}>
                                     <Text style={styles.emptyButtonText}>Tambah Habit</Text>
@@ -328,14 +342,22 @@ export default function RealitaTab({
                                         onPress={() => !isCompleted && onComplete(habit.id)}
                                         activeOpacity={0.8}
                                     >
-                                        <View style={[styles.habitIcon, isCompleted && styles.habitIconCompleted, isEmergency && styles.habitIconEmergency]}>
+                                        <View style={[
+                                            styles.habitIcon,
+                                            isCompleted && styles.habitIconCompleted,
+                                            isEmergency && styles.habitIconEmergency,
+                                        ]}>
                                             <Text style={styles.habitIconText}>
                                                 {isCompleted ? '🔥' : isEmergency ? '🚨' : '⏳'}
                                             </Text>
                                         </View>
                                         <View style={styles.habitInfo}>
                                             <View style={styles.habitTitleRow}>
-                                                <Text style={[styles.habitTitle, isCompleted && styles.habitTitleCompleted, isEmergency && styles.habitTitleEmergency]}>
+                                                <Text style={[
+                                                    styles.habitTitle,
+                                                    isCompleted && styles.habitTitleCompleted,
+                                                    isEmergency && styles.habitTitleEmergency,
+                                                ]}>
                                                     {habit.title}
                                                 </Text>
                                                 {isEmergency && <Text style={styles.urgentBadge}>URGENT</Text>}
@@ -348,7 +370,9 @@ export default function RealitaTab({
                                                     {habit.type}
                                                 </Text>
                                                 <Text style={styles.habitRewards}>
-                                                    <Text style={{ color: '#14B8A6' }}>+ {habit.goldReward}G</Text> • <Text style={{ color: '#8B5CF6' }}>+ {habit.expReward}X</Text>
+                                                    <Text style={{ color: '#14B8A6' }}>+ {habit.goldReward}G</Text>
+                                                    {' • '}
+                                                    <Text style={{ color: '#8B5CF6' }}>+ {habit.expReward}X</Text>
                                                 </Text>
                                             </View>
                                         </View>
@@ -380,10 +404,33 @@ export default function RealitaTab({
                 </TouchableOpacity>
             </View>
 
-            {/* Bottom Sheet Modal */}
-            <Modal visible={isAdding} transparent animationType="none" onRequestClose={closeBottomSheet}>
-                <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-                    <TouchableOpacity style={styles.overlayTouchable} activeOpacity={1} onPress={closeBottomSheet} />
+            {/* ─── Bottom Sheet Modal ─── */}
+            <Modal
+                visible={isAdding}
+                transparent
+                animationType="none"
+                onRequestClose={closeBottomSheet}
+                statusBarTranslucent
+            >
+                {/*
+                 * KeyboardAvoidingView wraps the whole modal content.
+                 * - iOS  : behavior="padding" mendorong sheet ke atas sebesar tinggi keyboard
+                 * - Android : behavior="height" memperkecil area agar sheet tetap terlihat
+                 * style flex:1 + justifyContent:'flex-end' agar sheet tetap nempel di bawah
+                 */}
+                <KeyboardAvoidingView
+                    style={styles.keyboardAvoid}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                >
+                    <Animated.View style={[StyleSheet.absoluteFillObject, styles.modalOverlayBg, { opacity: fadeAnim }]}>
+                        <TouchableOpacity
+                            style={StyleSheet.absoluteFillObject}
+                            activeOpacity={1}
+                            onPress={closeBottomSheet}
+                        />
+                    </Animated.View>
+
                     <Animated.View
                         style={[
                             styles.bottomSheet,
@@ -407,17 +454,25 @@ export default function RealitaTab({
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.sheetBody}>
+                        {/* ScrollView di dalam sheet agar tidak overflow saat keyboard muncul */}
+                        <ScrollView
+                            style={styles.sheetScroll}
+                            contentContainerStyle={styles.sheetScrollContent}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                            bounces={false}
+                        >
                             <View style={styles.inputGroup}>
                                 <Text style={styles.inputLabel}>Judul Habit</Text>
                                 <TextInput
                                     autoFocus
                                     style={styles.input}
                                     placeholder="Apa rencana besarmu?"
-                                    placeholderTextColor="#E2E8F0"
+                                    placeholderTextColor="#CBD5E1"
                                     value={newHabit}
                                     onChangeText={setNewHabit}
                                     onSubmitEditing={editingHabit ? handleUpdate : handleAdd}
+                                    returnKeyType="done"
                                 />
                             </View>
 
@@ -435,12 +490,10 @@ export default function RealitaTab({
                                             ]}
                                             onPress={() => setHabitType(type)}
                                         >
-                                            <Text
-                                                style={[
-                                                    styles.typeButtonText,
-                                                    habitType === type && styles.typeButtonTextActive,
-                                                ]}
-                                            >
+                                            <Text style={[
+                                                styles.typeButtonText,
+                                                habitType === type && styles.typeButtonTextActive,
+                                            ]}>
                                                 {type}
                                             </Text>
                                         </TouchableOpacity>
@@ -490,10 +543,11 @@ export default function RealitaTab({
                                     </View>
                                 )}
                             </View>
-                        </View>
+                        </ScrollView>
+
                         <View style={styles.sheetBottomSafe} />
                     </Animated.View>
-                </Animated.View>
+                </KeyboardAvoidingView>
             </Modal>
         </ScrollView>
     );
@@ -1038,7 +1092,6 @@ const styles = StyleSheet.create({
     },
     hpBadgeLow: {
         backgroundColor: '#EF4444',
-        color: '#FFFFFF',
     },
     hpBadgeText: {
         fontSize: 8,
@@ -1065,18 +1118,13 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         color: '#FFFFFF',
     },
-    // Modal Bottom Sheet
-    modalOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+    // ─── Modal / Bottom Sheet ───
+    keyboardAvoid: {
+        flex: 1,
         justifyContent: 'flex-end',
     },
-    overlayTouchable: {
-        ...StyleSheet.absoluteFillObject,
+    modalOverlayBg: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     bottomSheet: {
         backgroundColor: '#FFFFFF',
@@ -1089,6 +1137,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 20,
+        // Batasi tinggi maksimum agar tidak memenuhi layar
+        maxHeight: screenHeight * 0.85,
     },
     sheetHandle: {
         width: 48,
@@ -1120,9 +1170,12 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#CBD5E1',
     },
-    sheetBody: {
+    sheetScroll: {
+        flexGrow: 0,
+    },
+    sheetScrollContent: {
         paddingHorizontal: 24,
-        paddingBottom: 24,
+        paddingBottom: 8,
     },
     inputGroup: {
         marginBottom: 24,

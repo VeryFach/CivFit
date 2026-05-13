@@ -2,17 +2,21 @@ import { useCivStore } from '@/store';
 import { COLORS, THEME } from '@/theme';
 import { Coins, DollarSign, Heart } from 'lucide-react-native';
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function Header() {
   const stats = useCivStore((state) => state.stats);
+  const insets = useSafeAreaInsets();
 
   const expProgress = (stats.exp / stats.maxExp) * 100;
 
+  // Total height = status bar height + content area (56px)
+  const CONTENT_HEIGHT = 56;
+  const totalHeight = insets.top + CONTENT_HEIGHT;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: totalHeight, paddingTop: insets.top }]}>
       <View style={styles.leftGroup}>
         {/* HP Badge */}
         <View style={styles.badge}>
@@ -24,11 +28,11 @@ export function Header() {
         <View style={styles.badge}>
           <Text style={styles.lvlText}>LVL {stats.level}</Text>
           <View style={styles.progressBarBg}>
-            <View 
+            <View
               style={[
-                styles.progressBarFill, 
-                { width: `${expProgress}%` }
-              ]} 
+                styles.progressBarFill,
+                { width: `${expProgress}%` },
+              ]}
             />
           </View>
         </View>
@@ -59,12 +63,12 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 80,
     backgroundColor: COLORS.red,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',      // konten turun ke bawah status bar
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingBottom: 8,
     zIndex: 50,
     borderBottomWidth: 4,
     borderBottomColor: COLORS.dark,
