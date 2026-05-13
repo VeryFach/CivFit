@@ -1,10 +1,12 @@
-import React from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import Reality from '@/features/habits/reality';
 import { useCivStore } from '@/core/progression/store';
+import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
+import { DayReport } from '@/core/progression/engine';
+import SleepAnimation from '@/components/common/SleepAnimation';
 
 export default function RealitaTab() {
-    // Ambil data dan fungsi dari store
     const habits = useCivStore((state) => state.habits);
     const stats = useCivStore((state) => state.stats);
     const addHabit = useCivStore((state) => state.addHabit);
@@ -12,6 +14,26 @@ export default function RealitaTab() {
     const updateHabit = useCivStore((state) => state.updateHabit);
     const deleteHabit = useCivStore((state) => state.deleteHabit);
     const endDay = useCivStore((state) => state.endDay);
+
+    const [sleepState, setSleepState] = useState<'idle' | 'animating' | 'summary'>('idle');
+    const [report, setReport] = useState<DayReport | null>(null);
+
+    const handleEndDay = async () => {
+        const result = await endDay();
+        if (result) { // ✅ hanya set jika result ada (bukan undefined)
+            setReport(result);
+            setSleepState('animating');
+        }
+    };
+
+    const handleAnimationFinish = () => {
+        setSleepState('summary');
+    };
+
+    const handleCloseReport = () => {
+        setSleepState('idle');
+        setReport(null);
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -23,8 +45,16 @@ export default function RealitaTab() {
                 onComplete={completeHabit}
                 onUpdate={updateHabit}
                 onDelete={deleteHabit}
-                onEndDay={endDay}
+                onEndDay={handleEndDay}
             />
+            <SleepAnimation visible={sleepState === 'animating'} onFinish={handleAnimationFinish} />
+            {sleepState === 'summary' && report && (
+                <DailyReportOverlay
+                    report={report}
+                    stats={stats}
+                    onClose={handleCloseReport}
+                />
+            )}
         </SafeAreaView>
     );
 }
