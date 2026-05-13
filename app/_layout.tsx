@@ -1,7 +1,7 @@
-import { DarkTheme, DefaultTheme, ThemeProvider, useFocusEffect } from '@react-navigation/native';
-import { router, Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { router, Stack, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -9,56 +9,33 @@ import { useAuth } from '@/hooks/useAuth';
 import { CivfitProvider } from '@/store/CivfitProvider';
 import { useCivStore } from '@/store/appStore';
 
-export const unstable_settings = {
-  initialRouteName: '(app)',
-};
-
-/**
- * Root Layout
- * Handles authentication routing:
- * - Loading state → splash
- * - Not authenticated → (auth)/login
- * - Authenticated → (app)/(tabs)
- */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { currentUser, loading: authLoading } = useAuth();
   const storeLoading = useCivStore((state) => state.loading);
   const initialize = useCivStore((state) => state.initialize);
+  const rootNavigationState = useRootNavigationState();
 
-  // Initialize store on mount
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  // Handle routing based on auth state
-  useFocusEffect(
-    useCallback(() => {
-      // Still loading - show splash
-      if (authLoading || storeLoading) {
-        return;
-      }
+  useEffect(() => {
+    if (!rootNavigationState?.key) return;
 
-      // Not authenticated - go to login
-      if (!currentUser) {
-        router.replace('/(auth)/login');
-        return;
-      }
+    if (authLoading || storeLoading) return;
 
-      // Authenticated - go to main app
+    if (!currentUser) {
+      router.replace('/(auth)/login');
+    } else {
       router.replace('/(tabs)');
-    }, [authLoading, storeLoading, currentUser])
-  );
+    }
+  }, [rootNavigationState?.key, authLoading, storeLoading, currentUser]);
 
-  // Show loading state
   if (authLoading || storeLoading) {
     return (
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
+        <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="splash" options={{ title: 'Splash' }} />
         </Stack>
         <StatusBar style="auto" />
@@ -69,26 +46,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <CivfitProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          {/* Auth routes */}
-          <Stack.Screen
-            name="(auth)"
-            options={{
-              title: 'Auth',
-            }}
-          />
-
-          {/* App routes */}
-          <Stack.Screen
-            name="(app)"
-            options={{
-              title: 'App',
-            }}
-          />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" options={{ title: 'Auth' }} />
+          <Stack.Screen name="(tabs)" options={{ title: 'App' }} />
         </Stack>
         <StatusBar style="auto" />
       </CivfitProvider>

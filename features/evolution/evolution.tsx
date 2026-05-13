@@ -34,7 +34,7 @@ interface EvolutionTabProps {
     onUnlock: (branchId: string) => Promise<boolean>;
 }
 
-export function EvolutionTab({ stats, city, onBack, onUnlock }: EvolutionTabProps) {
+export default function EvolutionTab({ stats, city, onBack, onUnlock }: EvolutionTabProps) {
     const [selectedEra, setSelectedEra] = useState<Era | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<EvolutionBranch | null>(null);
     const [isUnlocking, setIsUnlocking] = useState(false);

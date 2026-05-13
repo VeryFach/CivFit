@@ -1,27 +1,40 @@
-import { signInWithGoogle } from '@/services/firebase';
+import { useGoogleAuth } from '@/hooks/useAuth';
 import { COLORS, THEME } from '@/theme';
 import { LogIn, Sparkles } from 'lucide-react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 export function LoginScreen() {
+  const { useGoogleAuth: handleGoogleAuth } = useGoogleAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const onLoginPress = async () => {
+    setIsLoading(true);
+    try {
+      await handleGoogleAuth();
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <View style={styles.container}>
-      <Animated.View 
+      <Animated.View
         entering={ZoomIn.duration(600)}
         style={styles.inner}
       >
         <View style={styles.logoContainer}>
-           <View style={styles.logoIcon}>
-              <Text style={styles.logoEmoji}>🏰</Text>
-           </View>
-           <Animated.View 
-             entering={FadeIn.delay(400)}
-             style={styles.sparkleBox}
-           >
-              <Sparkles size={24} color={COLORS.dark} />
-           </Animated.View>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoEmoji}>🏰</Text>
+          </View>
+          <Animated.View
+            entering={FadeIn.delay(400)}
+            style={styles.sparkleBox}
+          >
+            <Sparkles size={24} color={COLORS.dark} />
+          </Animated.View>
         </View>
 
         <Text style={styles.title}>
@@ -33,13 +46,16 @@ export function LoginScreen() {
 
         <View style={styles.actions}>
           <Pressable
-            onPress={signInWithGoogle}
-            style={styles.loginBtn}
+            onPress={onLoginPress}
+            disabled={isLoading}
+            style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
           >
             <LogIn size={24} color="#FFF" />
-            <Text style={styles.loginBtnText}>Sign in with Google</Text>
+            <Text style={styles.loginBtnText}>
+              {isLoading ? 'Signing in...' : 'Sign in with Google'}
+            </Text>
           </Pressable>
-          
+
           <Text style={styles.disclaimer}>
             Your data is stored securely in the cloud via Firebase.
           </Text>
@@ -122,6 +138,9 @@ const styles = StyleSheet.create({
     gap: 16,
     ...THEME.neoBorder,
     ...THEME.neoShadowLg,
+  },
+  loginBtnDisabled: {
+    opacity: 0.6,
   },
   loginBtnText: {
     color: '#FFF',

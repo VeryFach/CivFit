@@ -1,72 +1,148 @@
-import { clearSession, saveSession } from '@/platform/storage/sessionStorage';
-import { auth } from '@/services/firebase';
-import { User, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
-import { useEffect, useState } from 'react';
+import {
+    GoogleSignin,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 
-interface UseAuthReturn {
-  currentUser: User | null;
-  loading: boolean;
-  error: Error | null;
-  signOut: () => Promise<void>;
+import {
+    GoogleAuthProvider,
+    signInWithCredential,
+} from 'firebase/auth';
+
+import {
+    auth,
+} from '@/services/firebase';
+
+import { useCivStore } from '@/store/appStore';
+
+import firebaseConfig from '@/firebase-applet-config.json';
+
+
+// ======================================================
+
+const WEB_CLIENT_ID =
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    'ISI_WEB_CLIENT_ID';
+
+// ======================================================
+
+if (WEB_CLIENT_ID === 'ISI_WEB_CLIENT_ID') {
+    console.warn(
+        '[Auth] Google OAuth credentials not configured!\n' +
+        'Please set environment variable:\n' +
+        '  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'
+    );
 }
 
-/**
- * Hook for managing Firebase authentication state
- * Handles auth initialization, loading, logout, and session persistence
- */
-export function useAuth(): UseAuthReturn {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+const webClientProjectNumber =
+    WEB_CLIENT_ID
+        .split('-')[0];
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (user) => {
-        setCurrentUser(user);
-        
-        // Save session when user logs in
-        if (user) {
-          await saveSession({
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || undefined,
-            photoURL: user.photoURL || undefined,
-            lastLogin: new Date().toISOString()
-          });
-        }
-        
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        setError(err as Error);
-        setLoading(false);
-      }
+if (
+    WEB_CLIENT_ID !== 'ISI_WEB_CLIENT_ID' &&
+    webClientProjectNumber !== firebaseConfig.messagingSenderId
+) {
+    console.warn(
+        '[Auth] Google Web Client ID does not match Firebase project.\n' +
+        `Expected project number: ${firebaseConfig.messagingSenderId}\n` +
+        `Received project number: ${webClientProjectNumber}`
     );
+}
 
-    return () => unsubscribe();
-  }, []);
+GoogleSignin.configure({
 
-  const signOut = async () => {
-    try {
-      setLoading(true);
-      await firebaseSignOut(auth);
-      await clearSession();
-      setCurrentUser(null);
-    } catch (err) {
-      const error = err as Error;
-      setError(error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+    webClientId:
+        WEB_CLIENT_ID,
 
-  return {
-    currentUser,
-    loading,
-    error,
-    signOut
-  };
+    scopes: [
+        'email',
+        'profile',
+    ],
+});
+
+// ======================================================
+
+export function useGoogleAuth() {
+
+    const useGoogleAuth =
+        async () => {
+
+        try {
+
+            await GoogleSignin
+                .hasPlayServices({
+                    showPlayServicesUpdateDialog: true,
+                });
+
+            const result =
+                await GoogleSignin
+                    .signIn();
+
+            if (result.type === 'cancelled') {
+                return null;
+            }
+
+            const { idToken } =
+                result.data;
+
+            if (!idToken) {
+                throw new Error(
+                    'Google Sign-In did not return an idToken. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
+                );
+            }
+
+            const credential =
+                GoogleAuthProvider
+                    .credential(
+                        idToken
+                    );
+
+            return await
+                signInWithCredential(
+                    auth,
+                    credential
+                );
+
+        } catch (error: any) {
+
+            if (
+                error?.code === statusCodes.SIGN_IN_CANCELLED
+            ) {
+                return null;
+            }
+
+            console.warn(
+                '[Google Auth Error]',
+                error
+            );
+
+            return null;
+        }
+    };
+
+
+    return {
+
+        request: null,
+
+        response: null,
+
+        useGoogleAuth,
+    };
+}
+
+// ======================================================
+
+export function useAuth() {
+
+    const currentUser = useCivStore((state) => state.currentUser);
+
+    const loading = useCivStore((state) => state.loading);
+
+    return {
+
+        currentUser,
+
+        loading,
+
+    };
 }
