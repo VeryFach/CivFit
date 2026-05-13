@@ -3,6 +3,7 @@
  */
 
 import firebaseConfig from '@/firebase-applet-config.json';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
     getApp,
@@ -11,24 +12,17 @@ import {
 } from 'firebase/app';
 
 import {
+    Auth,
     browserLocalPersistence,
     getAuth,
-    getReactNativePersistence,
     GoogleAuthProvider,
     initializeAuth,
+    Persistence,
     setPersistence,
 } from 'firebase/auth';
 
-import {
-    doc,
-    getDoc,
-    getFirestore,
-    initializeFirestore,
-    persistentLocalCache,
-    persistentMultipleTabManager,
-} from 'firebase/firestore';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Platform,
 } from 'react-native';
@@ -48,10 +42,17 @@ const app =
 // AUTH
 // ======================================================
 
+const { getReactNativePersistence } =
+    require('@firebase/auth') as {
+        getReactNativePersistence: (
+            storage: typeof AsyncStorage
+        ) => Persistence;
+    };
+
 const isBrowser =
     typeof window !== 'undefined';
 
-let auth;
+let auth: Auth;
 
 if (Platform.OS === 'web' && isBrowser) {
     auth = getAuth(app);
@@ -65,11 +66,26 @@ if (Platform.OS === 'web' && isBrowser) {
         );
     });
 } else {
-    // React Native with AsyncStorage persistence
-    const persistence = getReactNativePersistence(AsyncStorage);
-    auth = initializeAuth(app, {
-        persistence,
-    });
+    try {
+        auth = initializeAuth(
+            app,
+            {
+                persistence:
+                    getReactNativePersistence(
+                        AsyncStorage
+                    ),
+            }
+        );
+    } catch (error: any) {
+        if (error?.code !== 'auth/already-initialized') {
+            console.warn(
+                '[Firebase] React Native Auth persistence failed:',
+                error
+            );
+        }
+
+        auth = getAuth(app);
+    }
 }
 
 export { auth };
@@ -84,32 +100,12 @@ let firestoreInstance;
 try {
 
     firestoreInstance =
-
-        Platform.OS === 'web' &&
-        isBrowser
-
-            ? initializeFirestore(
+        firebaseConfig.firestoreDatabaseId
+            ? getFirestore(
                   app,
-                  {
-                      databaseId:
-                          firebaseConfig.firestoreDatabaseId,
-
-                      localCache:
-                          persistentLocalCache({
-
-                              tabManager:
-                                  persistentMultipleTabManager(),
-                          }),
-                  }
+                  firebaseConfig.firestoreDatabaseId
               )
-
-            : initializeFirestore(
-                  app,
-                  {
-                      databaseId:
-                          firebaseConfig.firestoreDatabaseId,
-                  }
-              );
+            : getFirestore(app);
 
 } catch (error) {
 

@@ -14,6 +14,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        // Tidak perlu paddingTop karena MenuTabComponent sudah memiliki padding sendiri
+        paddingTop: 80,
     },
 });

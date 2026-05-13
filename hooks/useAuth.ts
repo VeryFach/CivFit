@@ -1,97 +1,114 @@
-import * as WebBrowser from 'expo-web-browser';
-
-import * as Google from 'expo-auth-session/providers/google';
+import {
+    GoogleSignin,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 import {
-  GoogleAuthProvider,
-  signInWithCredential,
+    GoogleAuthProvider,
+    signInWithCredential,
 } from 'firebase/auth';
 
 import {
-  auth,
+    auth,
 } from '@/services/firebase';
 
 import { useCivStore } from '@/store/appStore';
 
-
-// ======================================================
-
-WebBrowser.maybeCompleteAuthSession();
+import firebaseConfig from '@/firebase-applet-config.json';
 
 
 // ======================================================
 
 const WEB_CLIENT_ID =
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    '1:137900274417:web:04088dbcb33e9e84e4ef50';
-
-const ANDROID_CLIENT_ID =
-    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-    '1:137900274417:android:f4c81ba4f95e5afce4ef50';
+    'ISI_WEB_CLIENT_ID';
 
 // ======================================================
 
-if (WEB_CLIENT_ID === 'ISI_WEB_CLIENT_ID' || ANDROID_CLIENT_ID === 'ISI_ANDROID_CLIENT_ID') {
+if (WEB_CLIENT_ID === 'ISI_WEB_CLIENT_ID') {
     console.warn(
         '[Auth] Google OAuth credentials not configured!\n' +
-        'Please set environment variables:\n' +
-        '  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID\n' +
-        '  EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'
+        'Please set environment variable:\n' +
+        '  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'
     );
 }
+
+const webClientProjectNumber =
+    WEB_CLIENT_ID
+        .split('-')[0];
+
+if (
+    WEB_CLIENT_ID !== 'ISI_WEB_CLIENT_ID' &&
+    webClientProjectNumber !== firebaseConfig.messagingSenderId
+) {
+    console.warn(
+        '[Auth] Google Web Client ID does not match Firebase project.\n' +
+        `Expected project number: ${firebaseConfig.messagingSenderId}\n` +
+        `Received project number: ${webClientProjectNumber}`
+    );
+}
+
+GoogleSignin.configure({
+
+    webClientId:
+        WEB_CLIENT_ID,
+
+    scopes: [
+        'email',
+        'profile',
+    ],
+});
 
 // ======================================================
 
 export function useGoogleAuth() {
-
-    const [
-        request,
-        response,
-        promptAsync
-    ] = Google.useAuthRequest({
-
-        clientId:
-            WEB_CLIENT_ID,
-
-        androidClientId:
-            ANDROID_CLIENT_ID,
-
-        webClientId:
-            WEB_CLIENT_ID,
-    });
-
 
     const useGoogleAuth =
         async () => {
 
         try {
 
+            await GoogleSignin
+                .hasPlayServices({
+                    showPlayServicesUpdateDialog: true,
+                });
+
             const result =
-                await promptAsync();
+                await GoogleSignin
+                    .signIn();
 
-            if (
-                result.type === 'success'
-            ) {
-
-                const { id_token } =
-                    result.params;
-
-                const credential =
-                    GoogleAuthProvider
-                        .credential(
-                            id_token
-                        );
-
-                return await
-                    signInWithCredential(
-                        auth,
-                        credential
-                    );
+            if (result.type === 'cancelled') {
+                return null;
             }
 
-            return null;
+            const { idToken } =
+                result.data;
 
-        } catch (error) {
+            if (!idToken) {
+                throw new Error(
+                    'Google Sign-In did not return an idToken. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
+                );
+            }
+
+            const credential =
+                GoogleAuthProvider
+                    .credential(
+                        idToken
+                    );
+
+            return await
+                signInWithCredential(
+                    auth,
+                    credential
+                );
+
+        } catch (error: any) {
+
+            if (
+                error?.code === statusCodes.SIGN_IN_CANCELLED
+            ) {
+                return null;
+            }
 
             console.warn(
                 '[Google Auth Error]',
@@ -105,9 +122,9 @@ export function useGoogleAuth() {
 
     return {
 
-        request,
+        request: null,
 
-        response,
+        response: null,
 
         useGoogleAuth,
     };

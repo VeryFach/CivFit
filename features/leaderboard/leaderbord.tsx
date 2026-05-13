@@ -147,18 +147,34 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
             </View>
 
             {/* Rankings List */}
-            <FlatList
-                data={entries}
-                keyExtractor={(item) => item.userId}
-                renderItem={renderItem}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
+            {isEmbedded ? (
+                <View style={styles.listContent}>
+                    {entries.length > 0 ? (
+                        entries.map((entry, index) => (
+                            <React.Fragment key={entry.userId}>
+                                {renderItem({ item: entry, index })}
+                            </React.Fragment>
+                        ))
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>No rankings yet</Text>
+                        </View>
+                    )}
+                </View>
+            ) : (
+                <FlatList
+                    data={entries}
+                    keyExtractor={(item) => item.userId}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No rankings yet</Text>
                     </View>
-                }
-            />
+                    }
+                />
+            )}
 
             {/* Info Note */}
             <View style={styles.infoCard}>
