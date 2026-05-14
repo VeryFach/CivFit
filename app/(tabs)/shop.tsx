@@ -1,7 +1,7 @@
+import StoreTab from '@/features/store/store'; // import komponen StoreTab yang sudah Anda buat
+import { useCivStore } from '@/store';
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import StoreTab from '@/features/store/store'; // import komponen StoreTab yang sudah Anda buat
-import { useCivStore } from '@/core/progression/store';
 
 export default function ShopTab() {
     // Ambil data dan fungsi dari store

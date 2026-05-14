@@ -12,7 +12,7 @@ Successfully refactored the entire Expo mobile app to align with the web version
 
 ## 🎯 Key Changes
 
-### 1. Store Unification (`store/appStore.ts`)
+### 1. Store Unification (`store/index.ts`)
 
 **Problem**: Store was incomplete and didn't match `src/core/progression/store.ts`
 
@@ -27,7 +27,7 @@ Successfully refactored the entire Expo mobile app to align with the web version
   - `unlockEvolution()` - Tech tree progression
   - `addLog()`, `addHabit()`, `deleteHabit()`, `updateHabit()` - Activity management
 
-**Result**: `app/store/appStore.ts` is now functionally identical to `src/core/progression/store.ts`
+**Result**: `store/index.ts` now re-exports the canonical progression store used by the app
 
 ---
 
@@ -97,7 +97,7 @@ const completeHabit = useCivStore((state) => state.completeHabit);
 
 | File | Changes |
 |------|---------|
-| `store/appStore.ts` | Complete rewrite - now mirrors web store |
+| `store/index.ts` | Store export now points at the canonical progression store |
 | `app/_layout.tsx` | Fixed router paths, removed invalid props |
 | `app/(auth)/_layout.tsx` | Removed `animationEnabled` |
 | `app/(app)/_layout.tsx` | Removed `animationEnabled` |
@@ -153,11 +153,11 @@ app/(app)/(tabs)/
 - `core/types.ts` - Type definitions (Habit, UserStats, CityState, etc)
 - `core/constants.ts` - Game data (ERAS_CONFIG, BUILDINGS, DISASTERS, etc)
 - `core/progression/engine.ts` - `processEndDay()` calculation logic
-- `core/progression/store.ts` → `store/appStore.ts` (now mirrors behavior)
+- `core/progression/store.ts` → `store/index.ts` (single shared store export)
 - `core/simulation/cityUtils.ts` - City calculation utilities
 
 **Adapted for Platform**:
-- `store/appStore.ts` - Zustand store (same logic, Expo-specific imports)
+- `store/index.ts` - Zustand store export (shared logic through canonical progression store)
 - Tab components - React Native UI instead of HTML/CSS
 - Animations - Reanimated instead of motion/react
 - Icons - Ionicons instead of lucide-react
@@ -273,7 +273,7 @@ npm run build:expo  # or use EAS
 
 | Metric | Value |
 |--------|-------|
-| Lines in store/appStore.ts | ~450 |
+| Lines in canonical store implementation | ~450 |
 | Lines in Realita Tab component | ~550 |
 | Total Expo files modified | 7 |
 | TypeScript errors fixed | 8 |
@@ -284,7 +284,7 @@ npm run build:expo  # or use EAS
 ## 🔗 Documentation Links
 
 **Related Files**:
-- [Store Implementation](store/appStore.ts)
+- [Store Implementation](store/index.ts)
 - [Realita Tab](app/(app)/(tabs)/index.tsx)
 - [Auth Routing](app/_layout.tsx)
 - [Web Realita Reference](src/ui/components/RealitaTab.tsx)

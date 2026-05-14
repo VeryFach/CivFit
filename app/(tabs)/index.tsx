@@ -1,10 +1,10 @@
+import SleepAnimation from '@/components/common/SleepAnimation';
+import { DayReport } from '@/core/progression/engine';
+import Reality from '@/features/habits/reality';
+import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
+import { useCivStore } from '@/store';
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import Reality from '@/features/habits/reality';
-import { useCivStore } from '@/core/progression/store';
-import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
-import { DayReport } from '@/core/progression/engine';
-import SleepAnimation from '@/components/common/SleepAnimation';
 
 export default function RealitaTab() {
     const habits = useCivStore((state) => state.habits);

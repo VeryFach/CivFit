@@ -12,7 +12,7 @@ import {
     auth,
 } from '@/services/firebase';
 
-import { useCivStore } from '@/store/appStore';
+import { useCivStore } from '@/store';
 
 import firebaseConfig from '@/firebase-applet-config.json';
 

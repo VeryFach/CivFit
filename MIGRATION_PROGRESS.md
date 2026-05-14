@@ -22,7 +22,7 @@
   - Firestore error handling
 
 - ✅ Created `store/` with:
-  - `appStore.ts` - Complete Zustand state management (400+ lines)
+- `store/index.ts` - Complete Zustand state management (shared export)
   - `CivfitProvider.tsx` - Context wrapper for store initialization
 
 - ✅ Created feature folder structure:
@@ -155,7 +155,7 @@ import { calculateCitySummary } from '../../core/simulation/cityUtils';
 
 **AFTER (New Structure):**
 ```typescript
-import { useCivStore } from '@/store/appStore';
+import { useCivStore } from '@/store';
 import { useOnlineStatus } from '@/platform/mobile/hooks/useOnlineStatus';
 import { BUILDINGS } from '@/core/constants';
 import { Header } from '@/components/navigation/Header';
@@ -274,8 +274,8 @@ services/                    # Firebase & API ✅
     └── firestoreUtils.ts
 
 store/                       # Global state ✅
-├── appStore.ts             # Zustand store
-└── CivfitProvider.tsx       # Provider wrapper
+├── index.ts                # Re-export for canonical store access
+└── CivfitProvider.tsx      # Provider wrapper
 
 components/                  # UI components (PENDING)
 ├── common/

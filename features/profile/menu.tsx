@@ -1,5 +1,6 @@
 import { LeaderboardTab } from '@/features/leaderboard/leaderbord';
 import { auth } from '@/services/firebase';
+import { useCivStore } from '@/store';
 import { useThemeStore } from '@/store/themeStore';
 import { signOut } from 'firebase/auth';
 import {
@@ -35,7 +36,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { useCivStore } from '../../core/progression/store';
 import { platformConfirm } from '../../platform/mobile/utils/interactions';
 
 const { width } = Dimensions.get('window');
@@ -260,7 +260,11 @@ export function MenuTab() {
                                 <History size={24} color="#1E293B" />
                                 <Text style={stylesDynamic.logsTitle}>Riwayat Aktivitas</Text>
                             </View>
-                            <ScrollView style={stylesDynamic.logsList} showsVerticalScrollIndicator={false}>
+                            <ScrollView
+                                style={stylesDynamic.logsList}
+                                showsVerticalScrollIndicator={false}
+                                nestedScrollEnabled
+                            >
                                 {(logs?.length || 0) > 0 ? (
                                     logs.map((log) => (
                                         <View key={log.id} style={stylesDynamic.logItem}>
@@ -420,7 +424,11 @@ export function MenuTab() {
     };
 
     return (
-        <ScrollView style={dynamicStyles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView
+            style={dynamicStyles.container}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={activeSection !== 'logs'}
+        >
             <View style={dynamicStyles.tabBar}>
                 {[
                     { id: 'profile', label: 'Profil', Icon: User },

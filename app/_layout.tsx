@@ -28,7 +28,7 @@ import {
 
 import {
   useCivStore
-} from '@/store/appStore';
+} from '@/store';
 
 export default function RootLayout() {
 

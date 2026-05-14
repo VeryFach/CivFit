@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginScreen } from '@/components/common/LoginScreen';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
-import { useCivStore } from '@/store/appStore';
+import { useCivStore } from '@/store';
 
 /**
  * Login Screen Route

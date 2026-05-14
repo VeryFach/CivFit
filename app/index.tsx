@@ -14,7 +14,7 @@ import {
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
     useCivStore
-} from '@/store/appStore';
+} from '@/store';
 
 export default function Index() {
 
