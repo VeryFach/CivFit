@@ -11,6 +11,7 @@ import {
     useAuth
 } from '@/hooks/useAuth';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
     useCivStore
 } from '@/store/appStore';
@@ -26,6 +27,7 @@ export default function Index() {
         useCivStore(
             (state) => state.loading
         );
+    const isDarkMode = useColorScheme() === 'dark';
 
     if (
         authLoading ||
@@ -39,6 +41,7 @@ export default function Index() {
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
+                    backgroundColor: isDarkMode ? '#0F172A' : '#FDF6E3',
                 }}
             >
 

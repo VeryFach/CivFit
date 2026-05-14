@@ -1,3 +1,4 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useGoogleAuth } from '@/hooks/useAuth';
 import { COLORS, THEME } from '@/theme';
 import { LogIn, Sparkles } from 'lucide-react-native';
@@ -8,6 +9,28 @@ import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 export function LoginScreen() {
   const { useGoogleAuth: handleGoogleAuth } = useGoogleAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  const palette = isDarkMode
+    ? {
+        background: '#0F172A',
+        text: '#F8FAFC',
+        mutedText: '#94A3B8',
+        card: '#1E293B',
+        button: '#F8FAFC',
+        buttonText: '#0F172A',
+        accent: '#2DD4BF',
+      }
+    : {
+        background: COLORS.bg,
+        text: COLORS.dark,
+        mutedText: 'rgba(45, 52, 54, 0.4)',
+        card: COLORS.teal,
+        button: COLORS.dark,
+        buttonText: '#FFF',
+        accent: COLORS.teal,
+      };
   
   const onLoginPress = async () => {
     setIsLoading(true);
@@ -20,27 +43,27 @@ export function LoginScreen() {
     }
   };
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
       <Animated.View
         entering={ZoomIn.duration(600)}
         style={styles.inner}
       >
         <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
+          <View style={[styles.logoIcon, { backgroundColor: palette.card }]}>
             <Text style={styles.logoEmoji}>🏰</Text>
           </View>
           <Animated.View
             entering={FadeIn.delay(400)}
-            style={styles.sparkleBox}
+            style={[styles.sparkleBox, { backgroundColor: isDarkMode ? '#FBBF24' : COLORS.yellow }]}
           >
-            <Sparkles size={24} color={COLORS.dark} />
+            <Sparkles size={24} color={isDarkMode ? '#0F172A' : COLORS.dark} />
           </Animated.View>
         </View>
 
-        <Text style={styles.title}>
-          CIV<Text style={{ color: COLORS.teal }}>FIT</Text>
+        <Text style={[styles.title, { color: palette.text }]}>
+          CIV<Text style={{ color: palette.accent }}>FIT</Text>
         </Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: palette.mutedText }]}>
           Sync your productivity with the simulation
         </Text>
 
@@ -48,15 +71,19 @@ export function LoginScreen() {
           <Pressable
             onPress={onLoginPress}
             disabled={isLoading}
-            style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
+            style={[
+              styles.loginBtn,
+              { backgroundColor: palette.button, borderColor: isDarkMode ? '#334155' : COLORS.dark },
+              isLoading && styles.loginBtnDisabled,
+            ]}
           >
-            <LogIn size={24} color="#FFF" />
-            <Text style={styles.loginBtnText}>
+            <LogIn size={24} color={palette.buttonText} />
+            <Text style={[styles.loginBtnText, { color: palette.buttonText }]}>
               {isLoading ? 'Signing in...' : 'Sign in with Google'}
             </Text>
           </Pressable>
 
-          <Text style={styles.disclaimer}>
+          <Text style={[styles.disclaimer, { color: palette.mutedText }]}>
             Your data is stored securely in the cloud via Firebase.
           </Text>
         </View>
@@ -68,7 +95,6 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -112,11 +138,9 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textTransform: 'uppercase',
     letterSpacing: -2,
-    color: COLORS.dark,
     marginBottom: 16,
   },
   subtitle: {
-    color: 'rgba(45, 52, 54, 0.4)',
     fontWeight: '900',
     textTransform: 'uppercase',
     fontSize: 12,
@@ -129,7 +153,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loginBtn: {
-    backgroundColor: COLORS.dark,
     paddingVertical: 24,
     borderRadius: 24,
     flexDirection: 'row',
@@ -143,7 +166,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   loginBtnText: {
-    color: '#FFF',
     fontSize: 20,
     fontWeight: '900',
     fontStyle: 'italic',
@@ -152,7 +174,6 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     fontSize: 10,
-    color: '#9CA3AF',
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,

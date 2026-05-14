@@ -2,29 +2,48 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { COLORS } from '@/theme/index'
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Header } from '@/components/navigation/Header';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  const palette = isDarkMode
+    ? {
+        active: '#F8FAFC',
+        inactive: '#94A3B8',
+        bar: '#1E293B',
+        border: '#334155',
+        background: '#0F172A',
+      }
+    : {
+        active: '#1F2228',
+        inactive: '#9CA3AF',
+        bar: '#FFFFFF',
+        border: '#1F2228',
+        background: '#FDF6E3',
+      };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
       <Header />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#1F2228', // brand-dark
-          tabBarInactiveTintColor: '#9CA3AF', // gray-400
+          tabBarActiveTintColor: palette.active,
+          tabBarInactiveTintColor: palette.inactive,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            borderTopColor: '#1F2228',
+            backgroundColor: palette.bar,
+            borderTopColor: palette.border,
             borderTopWidth: 4,
             height: 84,
             paddingTop: 8,
             paddingBottom: 10,
-            shadowColor: '#1F2228',
+            shadowColor: palette.border,
             shadowOffset: { width: 0, height: -2 },
             shadowOpacity: 0.15,
             shadowRadius: 4,
@@ -105,6 +124,5 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF6E3',
   },
 });

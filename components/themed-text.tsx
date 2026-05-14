@@ -1,5 +1,6 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
-import { Text, TextProps, useColorScheme } from 'react-native';
+import { Text, TextProps } from 'react-native';
 
 type ThemedTextProps = TextProps & {
     type?: 'default' | 'title' | 'subtitle' | 'link';

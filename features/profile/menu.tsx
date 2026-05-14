@@ -1,44 +1,42 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { LeaderboardTab } from '@/features/leaderboard/leaderbord';
+import { auth } from '@/services/firebase';
+import { useThemeStore } from '@/store/themeStore';
+import { signOut } from 'firebase/auth';
 import {
-    View,
+    ArrowDownLeft,
+    ArrowUpRight,
+    Award,
+    Bell,
+    CheckCircle,
+    ChevronRight,
+    Clock,
+    Globe,
+    HelpCircle,
+    History,
+    LogOut,
+    Moon,
+    Settings,
+    ShieldCheck,
+    Sun,
+    Trophy,
+    User,
+    X
+} from 'lucide-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
     Text,
     TouchableOpacity,
-    ScrollView,
-    Image,
-    StyleSheet,
-    Dimensions,
-    Animated,
-    Alert,
-    Modal,
-    Switch,
+    View
 } from 'react-native';
 import { useCivStore } from '../../core/progression/store';
-import { auth } from '@/services/firebase';
-import { signOut } from 'firebase/auth';
 import { platformConfirm } from '../../platform/mobile/utils/interactions';
-import { LeaderboardTab } from '@/features/leaderboard/leaderbord';
-import {
-    Award,
-    User,
-    MapPin,
-    Globe,
-    Bell,
-    ShieldCheck,
-    History,
-    Clock,
-    ArrowUpRight,
-    ArrowDownLeft,
-    ChevronRight,
-    LogOut,
-    Info,
-    Settings,
-    Trophy,
-    X,
-    HelpCircle,
-    CheckCircle,
-    Moon,
-    Sun,
-} from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = (width - 64) / 3;
@@ -72,13 +70,14 @@ export function MenuTab() {
     const logs = useCivStore((state) => state.logs);
     const [activeSection, setActiveSection] = useState<'profile' | 'logs' | 'rank' | 'settings'>('profile');
     const user = auth.currentUser;
+    const isDarkMode = useThemeStore((state) => state.isDarkMode);
+    const setThemeMode = useThemeStore((state) => state.setThemeMode);
 
     // State untuk fitur settings
     const [selectedTimezone, setSelectedTimezone] = useState('WIB');
     const [notificationEnabled, setNotificationEnabled] = useState(true);
     const [faqModalVisible, setFaqModalVisible] = useState(false);
     const [timezoneModalVisible, setTimezoneModalVisible] = useState(false);
-    const [isDarkMode, setIsDarkMode] = useState(false); // <-- state dark mode
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -342,7 +341,7 @@ export function MenuTab() {
                                     </View>
                                     <Switch
                                         value={isDarkMode}
-                                        onValueChange={setIsDarkMode}
+                                        onValueChange={(value) => setThemeMode(value ? 'dark' : 'light')}
                                         trackColor={{ false: '#EF4444', true: '#14B8A6' }}
                                         thumbColor="#FFFFFF"
                                     />

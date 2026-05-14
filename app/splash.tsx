@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { COLORS } from '@/theme';
 
 /**
@@ -11,6 +12,20 @@ import { COLORS } from '@/theme';
  */
 export default function SplashScreen() {
     const router = useRouter();
+    const isDarkMode = useColorScheme() === 'dark';
+    const palette = isDarkMode
+        ? {
+            background: '#0F172A',
+            text: '#F8FAFC',
+            accent: '#2DD4BF',
+            muted: '#94A3B8',
+        }
+        : {
+            background: COLORS.bg,
+            text: COLORS.dark,
+            accent: COLORS.teal,
+            muted: '#999',
+        };
 
     useEffect(() => {
         // Give time for auth state to settle
@@ -22,7 +37,7 @@ export default function SplashScreen() {
     }, [router]);
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: palette.background }]}>
             <Animated.View
                 entering={ZoomIn.duration(600)}
                 style={styles.logoContainer}
@@ -30,11 +45,11 @@ export default function SplashScreen() {
                 <Text style={styles.logo}>🏰</Text>
                 <Animated.Text
                     entering={FadeIn.delay(400)}
-                    style={styles.title}
+                    style={[styles.title, { color: palette.text }]}
                 >
-                    CIV<Text style={styles.titleAccent}>FIT</Text>
+                    CIV<Text style={[styles.titleAccent, { color: palette.accent }]}>FIT</Text>
                 </Animated.Text>
-                <Text style={styles.loading}>Loading...</Text>
+                <Text style={[styles.loading, { color: palette.muted }]}>Loading...</Text>
             </Animated.View>
         </View>
     );
@@ -43,7 +58,6 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.bg,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -60,15 +74,12 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textTransform: 'uppercase',
         letterSpacing: -1,
-        color: COLORS.dark,
         marginBottom: 24,
     },
     titleAccent: {
-        color: COLORS.teal,
     },
     loading: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#999',
     },
 });

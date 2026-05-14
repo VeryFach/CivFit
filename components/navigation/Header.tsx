@@ -1,6 +1,7 @@
 import { useCivStore } from '@/store';
+import { useThemeStore } from '@/store/themeStore';
 import { COLORS, THEME } from '@/theme';
-import { Coins, DollarSign, Heart, Gem } from 'lucide-react-native';
+import { Coins, Gem, Heart } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export function Header() {
   const stats = useCivStore((state) => state.stats);
   const insets = useSafeAreaInsets();
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+
+  const palette = isDarkMode
+    ? {
+        container: '#0F172A',
+        surface: '#1E293B',
+        border: '#334155',
+        text: '#F8FAFC',
+        muted: '#94A3B8',
+        progressBg: '#334155',
+      }
+    : {
+        container: COLORS.red,
+        surface: COLORS.white,
+        border: COLORS.dark,
+        text: COLORS.dark,
+        muted: '#475569',
+        progressBg: COLORS.gray,
+      };
 
   const expProgress = (stats.exp / stats.maxExp) * 100;
 
@@ -16,37 +36,43 @@ export function Header() {
   const totalHeight = insets.top + CONTENT_HEIGHT;
 
   return (
-    <View style={[styles.container, { height: totalHeight, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          height: totalHeight,
+          paddingTop: insets.top,
+          backgroundColor: palette.container,
+          borderBottomColor: palette.border,
+          shadowColor: palette.border,
+        },
+      ]}
+    >
       <View style={styles.leftGroup}>
         {/* HP Badge */}
-        <View style={styles.badge}>
+        <View style={[styles.badge, { backgroundColor: palette.surface, borderColor: palette.border }]}>
           <Heart size={14} color={COLORS.red} fill={COLORS.red} />
-          <Text style={styles.badgeText}>{stats.hp}/{stats.maxHp} HP</Text>
+          <Text style={[styles.badgeText, { color: palette.text }]}>{stats.hp}/{stats.maxHp} HP</Text>
         </View>
 
         {/* LVL Badge */}
-        <View style={styles.badge}>
-          <Text style={styles.lvlText}>LVL {stats.level}</Text>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${expProgress}%` },
-              ]}
-            />
+        <View style={[styles.badge, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+          <Text style={[styles.lvlText, { color: palette.text }]}>LVL {stats.level}</Text>
+          <View style={[styles.progressBarBg, { backgroundColor: palette.progressBg, borderColor: palette.border }]}>
+            <View style={[styles.progressBarFill, { width: `${expProgress}%` }]} />
           </View>
         </View>
       </View>
 
       <View style={styles.rightGroup}>
         {/* Gold */}
-        <View style={[styles.currencyBadge, { backgroundColor: COLORS.yellow }]}>
+        <View style={[styles.currencyBadge, { backgroundColor: COLORS.yellow, borderColor: palette.border }]}>
           <Coins size={14} color={COLORS.dark} />
-          <Text style={styles.currencyText}>{stats.gold.toLocaleString()}</Text>
+          <Text style={[styles.currencyText, { color: COLORS.dark }]}>{stats.gold.toLocaleString()}</Text>
         </View>
 
         {/* Silver */}
-        <View style={[styles.currencyBadge, { backgroundColor: COLORS.purple }]}>
+        <View style={[styles.currencyBadge, { backgroundColor: COLORS.purple, borderColor: palette.border }]}>
           <Gem size={14} color={COLORS.white} />
           <Text style={[styles.currencyText, { color: COLORS.white }]}>
             {stats.silver.toLocaleString()}
@@ -63,7 +89,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.red,
     flexDirection: 'row',
     alignItems: 'flex-end',      // konten turun ke bawah status bar
     justifyContent: 'space-between',
@@ -71,8 +96,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     zIndex: 50,
     borderBottomWidth: 4,
-    borderBottomColor: COLORS.dark,
-    shadowColor: COLORS.dark,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -88,7 +111,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: COLORS.white,
     ...THEME.neoBorder,
     ...THEME.neoShadowSm,
     paddingHorizontal: 10,
@@ -111,10 +133,8 @@ const styles = StyleSheet.create({
   progressBarBg: {
     width: 60,
     height: 10,
-    backgroundColor: COLORS.gray,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: COLORS.dark,
     overflow: 'hidden',
   },
   progressBarFill: {

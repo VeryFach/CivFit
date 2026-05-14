@@ -1,41 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    Modal,
-    StyleSheet,
-    Dimensions,
-    Animated,
-    ActivityIndicator,
-} from 'react-native';
-import { UserStats, CityState, Era, EvolutionBranch, PlacedBuilding } from '@/core/types';
 import { ERAS_CONFIG, EVOLUTION_BRANCHES } from '@/core/constants';
+import { CityState, Era, EvolutionBranch, PlacedBuilding, UserStats } from '@/core/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Icons from 'lucide-react-native';
 import {
-    ChevronRight,
-    Target,
-    Zap,
-    Lock,
-    Info,
     ArrowLeft,
-    GitBranch,
-    X,
     Check,
     CheckSquare,
-    Loader2,
+    ChevronRight,
+    GitBranch,
+    Info,
+    Lock,
+    Target,
+    X,
+    Zap
 } from 'lucide-react-native';
+import React, { useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface EvolutionTabProps {
     stats: UserStats;
-    city: CityState;          // sudah tidak mengandung buildings
-    buildings: PlacedBuilding[]; // ✅ buildings dari state terpisah
+    city: CityState;
+    buildings: PlacedBuilding[];
     onBack: () => void;
     onUnlock: (branchId: string) => Promise<boolean>;
 }
 
+// ─── Palette helper (sama seperti StoreTab) ─────────────────────────────────
+function usePalette() {
+    const scheme = useColorScheme();
+    const isDark = scheme === 'dark';
+    return {
+        isDark,
+        // Backgrounds
+        bg: isDark ? '#0F172A' : '#F8FAFC',
+        card: isDark ? '#1E293B' : '#FFFFFF',
+        cardAlt: isDark ? '#0F172A' : '#F1F5F9',
+        panel: isDark ? '#111827' : '#F8FAFC',
+        // Borders
+        border: isDark ? '#334155' : '#E2E8F0',
+        borderMuted: isDark ? '#1E293B' : '#F1F5F9',
+        borderActive: isDark ? '#14B8A6' : '#1E293B',
+        // Text
+        text: isDark ? '#F8FAFC' : '#1E293B',
+        textMuted: isDark ? '#94A3B8' : '#64748B',
+        textFaint: isDark ? 'rgba(248,250,252,0.4)' : 'rgba(30,41,59,0.4)',
+        // Aksen
+        accent: '#14B8A6',        // teal
+        accentGold: '#FBBF24',
+        // Komponen spesifik
+        headerCardBg: isDark ? '#1E293B' : '#0F172A',   // header selalu gelap agar kontras
+        headerCardBorder: isDark ? '#334155' : '#1E293B',
+        eraButtonBg: isDark ? '#1E293B' : '#FFFFFF',
+        eraButtonBorder: isDark ? '#334155' : '#E2E8F0',
+        eraButtonLockedBg: isDark ? '#0F172A' : '#F1F5F9',
+        branchCardBg: isDark ? '#0F172A' : '#F1F5F9',
+        branchCardSelectedBg: '#14B8A6',
+        detailCardBg: isDark ? '#0F172A' : '#1E293B',   // detail selalu gelap (seperti exchange card)
+        detailCardBorder: isDark ? '#334155' : '#334155',
+        modalBg: isDark ? '#1E293B' : '#FFFFFF',
+        modalBorder: isDark ? '#334155' : '#E2E8F0',
+    };
+}
+
 export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock }: EvolutionTabProps) {
+    const palette = usePalette();
+
     const [selectedEra, setSelectedEra] = useState<Era | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<EvolutionBranch | null>(null);
     const [isUnlocking, setIsUnlocking] = useState(false);
@@ -73,6 +112,12 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
         });
     };
 
+    // Helper untuk mengecek requirement building
+    const checkBuildingRequirement = (target: string): boolean => {
+        const count = buildings.filter(b => b.buildingTypeId === target).length;
+        return count >= 2;
+    };
+
     const renderEraTimeline = () => {
         return (
             <View style={styles.timelineContainer}>
@@ -84,61 +129,51 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                     return (
                         <View key={era.id} style={styles.eraItem}>
                             {index !== ERAS_CONFIG.length - 1 && (
-                                <View style={[styles.eraConnector, isPast && styles.eraConnectorActive]} />
+                                <View style={[styles.eraConnector, { backgroundColor: palette.border }, isPast && { backgroundColor: palette.accent }]} />
                             )}
                             <TouchableOpacity
                                 style={[
                                     styles.eraButton,
-                                    isUnlocked ? styles.eraButtonUnlocked : styles.eraButtonLocked,
-                                    isCurrent && styles.eraButtonCurrent,
+                                    { backgroundColor: palette.eraButtonBg, borderColor: palette.eraButtonBorder },
+                                    !isUnlocked && { backgroundColor: palette.eraButtonLockedBg, opacity: 0.7 },
+                                    isCurrent && { borderColor: palette.accent, shadowColor: palette.accent },
                                 ]}
                                 onPress={() => openModal(era.id)}
                                 activeOpacity={0.8}
                             >
-                                <View style={[styles.eraIcon, isCurrent && styles.eraIconCurrent]}>
+                                <View style={[styles.eraIcon, isCurrent && { backgroundColor: palette.accent, borderColor: palette.border }]}>
                                     {isUnlocked ? (
                                         isCurrent ? (
                                             <Text style={styles.eraIconText}>✨</Text>
                                         ) : (
-                                            <Text style={styles.eraIconNumber}>{index + 1}</Text>
+                                            <Text style={[styles.eraIconNumber, { color: palette.text }]}>{index + 1}</Text>
                                         )
                                     ) : (
-                                        <Lock size={20} color="#94A3B8" />
+                                        <Lock size={20} color={palette.textMuted} />
                                     )}
                                 </View>
                                 <View style={styles.eraInfo}>
                                     <View style={styles.eraTitleRow}>
-                                        <Text style={[styles.eraName, !isUnlocked && styles.eraNameLocked]}>
+                                        <Text style={[styles.eraName, { color: !isUnlocked ? palette.textMuted : palette.text }]}>
                                             {era.name}
                                         </Text>
                                         {isCurrent && (
-                                            <View style={styles.currentBadge}>
+                                            <View style={[styles.currentBadge, { backgroundColor: palette.accent }]}>
                                                 <Text style={styles.currentBadgeText}>Aktif</Text>
                                             </View>
                                         )}
                                     </View>
-                                    <Text style={styles.eraSubtext}>
+                                    <Text style={[styles.eraSubtext, { color: palette.textMuted }]}>
                                         {isUnlocked ? 'Terbuka' : `Butuh Level ${era.minLevel}`}
                                     </Text>
                                 </View>
-                                <ChevronRight size={20} color={isUnlocked ? '#1E293B' : '#CBD5E1'} />
+                                <ChevronRight size={20} color={isUnlocked ? palette.text : palette.textMuted} />
                             </TouchableOpacity>
                         </View>
                     );
                 })}
             </View>
         );
-    };
-
-    // Helper untuk mengecek requirement building
-    const checkBuildingRequirement = (target: string | number): boolean => {
-        if (typeof target === 'string') {
-            // target adalah buildingTypeId, butuh minimal 2 bangunan tipe itu
-            const count = buildings.filter(b => b.buildingTypeId === target).length;
-            return count >= 2;
-        }
-        // jika target adalah angka (misal jumlah total), tapi biasanya tidak dipakai
-        return false;
     };
 
     const renderModal = () => {
@@ -156,6 +191,8 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                         style={[
                             styles.modalContent,
                             {
+                                backgroundColor: palette.modalBg,
+                                borderColor: palette.modalBorder,
                                 transform: [{
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
@@ -168,18 +205,18 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScroll}>
                             <View style={styles.modalHeader}>
                                 <View>
-                                    <Text style={styles.modalTitle}>{eraData.name}</Text>
-                                    <Text style={styles.modalSubtitle}>Cabang Peradaban</Text>
+                                    <Text style={[styles.modalTitle, { color: palette.text }]}>{eraData.name}</Text>
+                                    <Text style={[styles.modalSubtitle, { color: palette.textMuted }]}>Cabang Peradaban</Text>
                                 </View>
-                                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                                    <X size={24} color="#1E293B" />
+                                <TouchableOpacity style={[styles.closeButton, { backgroundColor: palette.cardAlt, borderColor: palette.border }]} onPress={closeModal}>
+                                    <X size={24} color={palette.text} />
                                 </TouchableOpacity>
                             </View>
 
-                            <Text style={styles.modalQuote}>"{eraData.description}"</Text>
+                            <Text style={[styles.modalQuote, { color: palette.textMuted }]}>"{eraData.description}"</Text>
 
                             <View style={styles.branchesSection}>
-                                <Text style={styles.sectionLabel}>Jalur Evolusi Tersedia</Text>
+                                <Text style={[styles.sectionLabel, { color: palette.textFaint }]}>Jalur Evolusi Tersedia</Text>
                                 <View style={styles.branchesGrid}>
                                     {branches.map(branch => {
                                         const Icon = (Icons as any)[branch.iconName] || Icons.Circle;
@@ -189,20 +226,21 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                                 key={branch.id}
                                                 style={[
                                                     styles.branchCard,
-                                                    selectedBranch?.id === branch.id && styles.branchCardSelected,
-                                                    isBranchUnlocked && styles.branchCardUnlocked,
+                                                    { backgroundColor: palette.branchCardBg, borderColor: 'transparent' },
+                                                    selectedBranch?.id === branch.id && { backgroundColor: palette.branchCardSelectedBg, borderColor: palette.borderActive },
+                                                    isBranchUnlocked && { backgroundColor: palette.accent + '33', borderColor: palette.accent }, // 20% opacity
                                                 ]}
                                                 onPress={() => setSelectedBranch(branch)}
                                             >
                                                 {isBranchUnlocked && (
-                                                    <View style={styles.unlockedBadge}>
+                                                    <View style={[styles.unlockedBadge, { backgroundColor: palette.accent }]}>
                                                         <Check size={12} color="#FFFFFF" />
                                                     </View>
                                                 )}
-                                                <View style={styles.branchIcon}>
-                                                    <Icon size={32} color="#1E293B" />
+                                                <View style={[styles.branchIcon, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                                                    <Icon size={32} color={palette.text} />
                                                 </View>
-                                                <Text style={styles.branchName}>{branch.name}</Text>
+                                                <Text style={[styles.branchName, { color: palette.text }]}>{branch.name}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -210,30 +248,30 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                             </View>
 
                             {selectedBranchData && (
-                                <View style={styles.detailCard}>
+                                <View style={[styles.detailCard, { backgroundColor: palette.detailCardBg, borderColor: palette.detailCardBorder }]}>
                                     <View style={styles.detailHeader}>
                                         <View style={styles.detailTitleRow}>
-                                            <View style={styles.detailIcon}>
+                                            <View style={[styles.detailIcon, { backgroundColor: palette.accent }]}>
                                                 <Target size={20} color="#1E293B" />
                                             </View>
                                             <View>
-                                                <Text style={styles.detailName}>{selectedBranchData.name}</Text>
-                                                <Text style={styles.detailSub}>Detail & Requirements</Text>
+                                                <Text style={[styles.detailName, { color: palette.accent }]}>{selectedBranchData.name}</Text>
+                                                <Text style={[styles.detailSub, { color: palette.textFaint }]}>Detail & Requirements</Text>
                                             </View>
                                         </View>
                                         {city.unlockedEvolutions?.includes(selectedBranchData.id) && (
-                                            <View style={styles.unlockBadge}>
+                                            <View style={[styles.unlockBadge, { backgroundColor: palette.accent }]}>
                                                 <Text style={styles.unlockBadgeText}>Unlocked</Text>
                                             </View>
                                         )}
                                     </View>
 
-                                    <Text style={styles.detailDesc}>"{selectedBranchData.description}"</Text>
+                                    <Text style={[styles.detailDesc, { color: palette.textMuted }]}>"{selectedBranchData.description}"</Text>
 
                                     <View style={styles.requirementsSection}>
                                         <View style={styles.sectionHeader}>
-                                            <CheckSquare size={16} color="#FBBF24" />
-                                            <Text style={styles.requirementsLabel}>Syarat Pembukaan</Text>
+                                            <CheckSquare size={16} color={palette.accentGold} />
+                                            <Text style={[styles.requirementsLabel, { color: palette.accentGold }]}>Syarat Pembukaan</Text>
                                         </View>
                                         {selectedBranchData.requirements.map((req, idx) => {
                                             let isMet = false;
@@ -241,18 +279,15 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                                 isMet = stats.level >= (req.target as number);
                                             } else if (req.type === 'buildings') {
                                                 const target = req.target as string;
-                                                // menggunakan buildings dari props
-                                                const count = buildings.filter(b => b.buildingTypeId === target).length;
-                                                const required = 2; // default requirement untuk buildings adalah minimal 2
-                                                isMet = count >= required;
+                                                isMet = checkBuildingRequirement(target);
                                             }
                                             return (
-                                                <View key={idx} style={styles.requirementRow}>
-                                                    <Text style={styles.requirementText}>{req.description}</Text>
+                                                <View key={idx} style={[styles.requirementRow, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }]}>
+                                                    <Text style={[styles.requirementText, { color: palette.textFaint }]}>{req.description}</Text>
                                                     {isMet ? (
-                                                        <Check size={16} color="#14B8A6" />
+                                                        <Check size={16} color={palette.accent} />
                                                     ) : (
-                                                        <Lock size={12} color="rgba(255,255,255,0.2)" />
+                                                        <Lock size={12} color={palette.textMuted} />
                                                     )}
                                                 </View>
                                             );
@@ -261,13 +296,13 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
 
                                     <View style={styles.benefitsSection}>
                                         <View style={styles.sectionHeader}>
-                                            <Zap size={16} color="#14B8A6" />
-                                            <Text style={styles.benefitsLabel}>Keuntungan Budaya</Text>
+                                            <Zap size={16} color={palette.accent} />
+                                            <Text style={[styles.benefitsLabel, { color: palette.accent }]}>Keuntungan Budaya</Text>
                                         </View>
                                         {selectedBranchData.benefits.map((benefit, idx) => (
                                             <View key={idx} style={styles.benefitRow}>
-                                                <View style={styles.benefitDot} />
-                                                <Text style={styles.benefitText}>{benefit}</Text>
+                                                <View style={[styles.benefitDot, { backgroundColor: palette.accent }]} />
+                                                <Text style={[styles.benefitText, { color: palette.textMuted }]}>{benefit}</Text>
                                             </View>
                                         ))}
                                     </View>
@@ -276,12 +311,12 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                         <TouchableOpacity
                                             style={[
                                                 styles.unlockButton,
+                                                { backgroundColor: palette.accent },
                                                 (isUnlocking || !selectedBranchData.requirements.every(req => {
                                                     if (req.type === 'level') return stats.level >= (req.target as number);
                                                     if (req.type === 'buildings') {
                                                         const target = req.target as string;
-                                                        const count = buildings.filter(b => b.buildingTypeId === target).length;
-                                                        return count >= 2;
+                                                        return checkBuildingRequirement(target);
                                                     }
                                                     return true;
                                                 })) && styles.unlockButtonDisabled,
@@ -309,21 +344,21 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.container, { backgroundColor: palette.bg }]} showsVerticalScrollIndicator={false}>
             <TouchableOpacity style={styles.backButton} onPress={onBack}>
-                <ArrowLeft size={16} color="#1E293B" />
-                <Text style={styles.backButtonText}>Kembali ke Kota</Text>
+                <ArrowLeft size={16} color={palette.text} />
+                <Text style={[styles.backButtonText, { color: palette.text }]}>Kembali ke Kota</Text>
             </TouchableOpacity>
 
-            <View style={styles.headerCard}>
+            <View style={[styles.headerCard, { backgroundColor: palette.headerCardBg, borderColor: palette.headerCardBorder }]}>
                 <View style={styles.headerBackground}>
                     <GitBranch size={128} color="rgba(255,255,255,0.1)" />
                 </View>
                 <Text style={styles.headerTitle}>Pohon Evolusi</Text>
-                <Text style={styles.headerSubtitle}>Tentukan masa depan peradabanmu</Text>
-                <View style={styles.infoBox}>
-                    <Info size={20} color="#14B8A6" />
-                    <Text style={styles.infoText}>
+                <Text style={[styles.headerSubtitle, { color: palette.accentGold }]}>Tentukan masa depan peradabanmu</Text>
+                <View style={[styles.infoBox, { borderColor: palette.border, backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                    <Info size={20} color={palette.accent} />
+                    <Text style={[styles.infoText, { color: '#FFFFFF' }]}>
                         Pilihlah era untuk melihat jalur teknologi dan cabang kebudayaan yang tersedia.
                     </Text>
                 </View>
@@ -340,7 +375,6 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 80,
@@ -357,15 +391,12 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         fontStyle: 'italic',
         textTransform: 'uppercase',
-        color: '#1E293B',
     },
     headerCard: {
-        backgroundColor: '#1E293B',
         borderRadius: 40,
         padding: 24,
         marginBottom: 24,
         borderWidth: 2,
-        borderColor: '#334155',
         shadowColor: '#000',
         shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.15,
@@ -392,24 +423,20 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textTransform: 'uppercase',
         letterSpacing: 3,
-        color: '#FBBF24',
         marginBottom: 24,
     },
     infoBox: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        backgroundColor: 'rgba(255,255,255,0.1)',
         padding: 16,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: '#334155',
     },
     infoText: {
         flex: 1,
         fontSize: 10,
         fontWeight: '700',
-        color: '#FFFFFF',
         textTransform: 'uppercase',
     },
     timelineContainer: {
@@ -425,11 +452,7 @@ const styles = StyleSheet.create({
         top: 64,
         width: 4,
         height: 48,
-        backgroundColor: '#E2E8F0',
         zIndex: 0,
-    },
-    eraConnectorActive: {
-        backgroundColor: '#14B8A6',
     },
     eraButton: {
         flexDirection: 'row',
@@ -444,36 +467,14 @@ const styles = StyleSheet.create({
         elevation: 2,
         marginLeft: 16,
     },
-    eraButtonUnlocked: {
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E2E8F0',
-    },
-    eraButtonLocked: {
-        backgroundColor: '#F1F5F9',
-        borderColor: '#E2E8F0',
-        opacity: 0.7,
-    },
-    eraButtonCurrent: {
-        borderColor: '#14B8A6',
-        shadowColor: '#14B8A6',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        elevation: 4,
-    },
     eraIcon: {
         width: 48,
         height: 48,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: '#CBD5E1',
-        backgroundColor: '#F1F5F9',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
-    },
-    eraIconCurrent: {
-        backgroundColor: '#14B8A6',
-        borderColor: '#0F172A',
     },
     eraIconText: {
         fontSize: 20,
@@ -481,7 +482,6 @@ const styles = StyleSheet.create({
     eraIconNumber: {
         fontSize: 18,
         fontWeight: '900',
-        color: '#1E293B',
     },
     eraInfo: {
         flex: 1,
@@ -496,13 +496,8 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textTransform: 'uppercase',
         fontStyle: 'italic',
-        color: '#1E293B',
-    },
-    eraNameLocked: {
-        color: '#94A3B8',
     },
     currentBadge: {
-        backgroundColor: '#14B8A6',
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 16,
@@ -516,7 +511,6 @@ const styles = StyleSheet.create({
     eraSubtext: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#94A3B8',
         textTransform: 'uppercase',
         marginTop: 2,
     },
@@ -533,11 +527,9 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
     modalContent: {
-        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 48,
         borderTopRightRadius: 48,
         borderWidth: 2,
-        borderColor: '#E2E8F0',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.1,
@@ -561,30 +553,25 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         fontStyle: 'italic',
         textTransform: 'uppercase',
-        color: '#1E293B',
     },
     modalSubtitle: {
         fontSize: 10,
         fontWeight: '900',
         textTransform: 'uppercase',
         letterSpacing: 3,
-        color: '#94A3B8',
     },
     closeButton: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#F1F5F9',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#CBD5E1',
     },
     modalQuote: {
         fontSize: 14,
         fontWeight: '700',
         fontStyle: 'italic',
-        color: '#64748B',
         marginBottom: 24,
     },
     branchesSection: {
@@ -595,8 +582,6 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textTransform: 'uppercase',
         letterSpacing: 2,
-        color: '#1E293B',
-        opacity: 0.4,
         marginBottom: 12,
     },
     branchesGrid: {
@@ -607,31 +592,17 @@ const styles = StyleSheet.create({
     },
     branchCard: {
         width: (width - 72) / 2,
-        backgroundColor: '#F1F5F9',
         borderRadius: 32,
         padding: 20,
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: 'transparent',
         marginBottom: 12,
-    },
-    branchCardSelected: {
-        backgroundColor: '#14B8A6',
-        borderColor: '#1E293B',
-        shadowColor: '#000',
-        shadowOffset: { width: 3, height: 3 },
-        shadowOpacity: 0.2,
-        elevation: 4,
-    },
-    branchCardUnlocked: {
-        backgroundColor: 'rgba(20,184,166,0.2)',
-        borderColor: '#14B8A6',
+        position: 'relative',
     },
     unlockedBadge: {
         position: 'absolute',
         top: 8,
         right: 8,
-        backgroundColor: '#14B8A6',
         width: 20,
         height: 20,
         borderRadius: 10,
@@ -642,12 +613,10 @@ const styles = StyleSheet.create({
     branchIcon: {
         width: 56,
         height: 56,
-        backgroundColor: '#FFFFFF',
         borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#CBD5E1',
         marginBottom: 12,
     },
     branchName: {
@@ -656,16 +625,13 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         fontStyle: 'italic',
         textAlign: 'center',
-        color: '#1E293B',
     },
     detailCard: {
-        backgroundColor: '#1E293B',
         borderRadius: 32,
         padding: 20,
         marginTop: 8,
         marginBottom: 24,
         borderWidth: 2,
-        borderColor: '#334155',
     },
     detailHeader: {
         flexDirection: 'row',
@@ -681,7 +647,6 @@ const styles = StyleSheet.create({
     detailIcon: {
         width: 40,
         height: 40,
-        backgroundColor: '#14B8A6',
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
@@ -691,16 +656,13 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textTransform: 'uppercase',
         fontStyle: 'italic',
-        color: '#14B8A6',
     },
     detailSub: {
         fontSize: 8,
         fontWeight: '700',
         textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.4)',
     },
     unlockBadge: {
-        backgroundColor: '#14B8A6',
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 24,
@@ -715,7 +677,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         fontStyle: 'italic',
-        color: 'rgba(255,255,255,0.8)',
         marginBottom: 20,
     },
     requirementsSection: {
@@ -730,24 +691,20 @@ const styles = StyleSheet.create({
     requirementsLabel: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#FBBF24',
         textTransform: 'uppercase',
     },
     requirementRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
         padding: 12,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
         marginBottom: 8,
     },
     requirementText: {
         fontSize: 10,
         fontWeight: '700',
-        color: 'rgba(255,255,255,0.6)',
     },
     benefitsSection: {
         marginBottom: 24,
@@ -755,7 +712,6 @@ const styles = StyleSheet.create({
     benefitsLabel: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#14B8A6',
         textTransform: 'uppercase',
     },
     benefitRow: {
@@ -768,15 +724,12 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#14B8A6',
     },
     benefitText: {
         fontSize: 9,
         fontWeight: '700',
-        color: 'rgba(255,255,255,0.8)',
     },
     unlockButton: {
-        backgroundColor: '#14B8A6',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -791,7 +744,6 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     unlockButtonDisabled: {
-        backgroundColor: '#475569',
         opacity: 0.5,
     },
     unlockButtonText: {

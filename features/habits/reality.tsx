@@ -1,27 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    TextInput,
-    Modal,
-    StyleSheet,
-    Dimensions,
-    Animated,
-    KeyboardAvoidingView,
-    Platform,
-    UIManager,
-} from 'react-native';
 import { Habit, HabitType } from '@/core/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
-    Plus,
-    X,
-    Trash2,
-    Edit3,
     Calendar as CalendarIcon,
+    Edit3,
     Layers,
+    Plus,
+    Trash2,
+    X,
 } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    UIManager,
+    View,
+} from 'react-native';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -49,6 +50,10 @@ export default function RealitaTab({
     onDelete,
     onEndDay,
 }: RealitaTabProps) {
+    const isDarkMode = useColorScheme() === 'dark';
+    const palette = isDarkMode
+        ? { screen: '#0F172A', card: '#1E293B', border: '#334155' }
+        : { screen: '#F8FAFC', card: '#FFFFFF', border: '#E2E8F0' };
     const [isAdding, setIsAdding] = useState(false);
     const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
     const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null);
@@ -135,7 +140,7 @@ export default function RealitaTab({
         const weekDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
         return (
-            <View style={styles.calendarCard}>
+            <View style={[styles.calendarCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
                 <View style={styles.calendarHeader}>
                     <Text style={styles.calendarTitle}>History Dunia</Text>
                     <View style={styles.calendarMonthBadge}>
@@ -214,28 +219,59 @@ export default function RealitaTab({
     }, [completionRate, momentum]);
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.container, { backgroundColor: palette.screen }]} showsVerticalScrollIndicator={false}>
             {/* Daily Progress Card */}
-            <View style={styles.progressCard}>
+            <View
+                style={[
+                    styles.progressCard,
+                    {
+                        backgroundColor: isDarkMode ? palette.card : '#FFFFFF',
+                        borderColor: isDarkMode ? palette.border : '#CBD5E1',
+                        shadowOpacity: isDarkMode ? 0.15 : 0.08,
+                    },
+                ]}
+            >
                 <View style={styles.progressHeader}>
                     <View>
-                        <Text style={styles.progressTitle}>Realita Center</Text>
-                        <Text style={styles.progressDate}>
+                        <Text style={[styles.progressTitle, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>Realita Center</Text>
+                        <Text style={[styles.progressDate, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>
                             {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </Text>
                     </View>
                     <View style={styles.viewToggle}>
                         <TouchableOpacity
-                            style={[styles.viewButton, view === 'habits' && styles.viewButtonActiveHabits]}
+                            style={[
+                                styles.viewButton,
+                                {
+                                    backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
+                                    borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
+                                },
+                                view === 'habits' && styles.viewButtonActiveHabits,
+                            ]}
                             onPress={() => setView('habits')}
                         >
-                            <Text style={[styles.viewButtonText, view === 'habits' && styles.viewButtonTextActive]}>HABITS</Text>
+                            <Text style={[
+                                styles.viewButtonText,
+                                { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
+                                view === 'habits' && styles.viewButtonTextActive,
+                            ]}>HABITS</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.viewButton, view === 'calendar' && styles.viewButtonActiveCalendar]}
+                            style={[
+                                styles.viewButton,
+                                {
+                                    backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
+                                    borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
+                                },
+                                view === 'calendar' && styles.viewButtonActiveCalendar,
+                            ]}
                             onPress={() => setView('calendar')}
                         >
-                            <Text style={[styles.viewButtonText, view === 'calendar' && styles.viewButtonTextActive]}>LOGS</Text>
+                            <Text style={[
+                                styles.viewButtonText,
+                                { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
+                                view === 'calendar' && styles.viewButtonTextActive,
+                            ]}>LOGS</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -243,7 +279,7 @@ export default function RealitaTab({
                 <View style={styles.progressStats}>
                     <View style={styles.statItem}>
                         <View style={styles.statHeader}>
-                            <Text style={styles.statLabel}>Habit Execution</Text>
+                            <Text style={[styles.statLabel, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>Habit Execution</Text>
                             <Text style={styles.statValue}>{Math.round(completionRate * 100)}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
@@ -258,7 +294,7 @@ export default function RealitaTab({
                     </View>
                     <View style={styles.statItem}>
                         <View style={styles.statHeader}>
-                            <Text style={styles.statLabel}>Momentum (Snowball)</Text>
+                            <Text style={[styles.statLabel, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>Momentum (Snowball)</Text>
                             <Text style={[styles.statValue, { color: momentumColor }]}>{momentum}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
@@ -274,11 +310,11 @@ export default function RealitaTab({
                 </View>
 
                 <View style={styles.momentumStatus}>
-                    <View style={[styles.momentumIcon, { borderColor: momentumColor }]}>
+                    <View style={[styles.momentumIcon, { borderColor: momentumColor, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#FFFFFF' }]}>
                         <Layers size={16} color={momentumColor} />
                     </View>
                     <View>
-                        <Text style={styles.momentumLabel}>Current State</Text>
+                        <Text style={[styles.momentumLabel, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>Current State</Text>
                         <Text style={[styles.momentumValue, { color: momentumColor }]}>System Status: {momentumStatus}</Text>
                     </View>
                 </View>

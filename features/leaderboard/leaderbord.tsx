@@ -1,18 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    Image,
-    FlatList,
-    ActivityIndicator,
-    Dimensions,
-    Animated,
-} from 'react-native';
-import { Trophy, Users, TrendingUp, Medal } from 'lucide-react-native';
-import { db } from '@/services/firebase/index';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
+import { db } from '@/services/firebase/index';
+import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { Medal, TrendingUp, Trophy, Users } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 interface LeaderboardEntry {
     userId: string;
@@ -31,6 +32,22 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const fadeAnims = useRef<Animated.Value[]>([]).current;
+    const isDarkMode = useColorScheme() === 'dark';
+    const palette = isDarkMode
+        ? {
+            screen: '#0F172A',
+            card: '#1E293B',
+            border: '#334155',
+            text: '#F8FAFC',
+            muted: '#94A3B8',
+        }
+        : {
+            screen: '#F8FAFC',
+            card: '#FFFFFF',
+            border: '#E2E8F0',
+            text: '#1E293B',
+            muted: '#94A3B8',
+        };
 
     useEffect(() => {
         const q = query(
@@ -74,11 +91,11 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
                 style={[
                     styles.rankCard,
                     isTop3 ? styles.rankCardTop : styles.rankCardNormal,
-                    { opacity: fadeAnims[index] || 1 },
+                    { backgroundColor: palette.card, borderColor: palette.border, opacity: fadeAnims[index] || 1 },
                 ]}
             >
                 <View style={[styles.rankNumber, rankBgStyle]}>
-                    <Text style={styles.rankNumberText}>{index + 1}</Text>
+                    <Text style={[styles.rankNumberText, { color: palette.text }]}>{index + 1}</Text>
                 </View>
 
                 <View style={styles.avatarContainer}>
@@ -86,23 +103,23 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
                         <Image source={{ uri: item.photoURL }} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarInitial}>{item.displayName.charAt(0)}</Text>
+                            <Text style={[styles.avatarInitial, { color: palette.text }]}>{item.displayName.charAt(0)}</Text>
                         </View>
                     )}
                 </View>
 
                 <View style={styles.userInfo}>
-                    <Text style={styles.userName} numberOfLines={1}>
+                    <Text style={[styles.userName, { color: palette.text }]} numberOfLines={1}>
                         {item.displayName}
                     </Text>
                     <View style={styles.userStats}>
                         <View style={styles.statRow}>
                             <TrendingUp size={12} color="#14B8A6" />
-                            <Text style={styles.statText}>Lv.{item.level}</Text>
+                            <Text style={[styles.statText, { color: palette.muted }]}>Lv.{item.level}</Text>
                         </View>
                         <View style={styles.statRow}>
                             <Users size={12} color="#14B8A6" />
-                            <Text style={styles.statText}>{item.population.toLocaleString()} Pop</Text>
+                            <Text style={[styles.statText, { color: palette.muted }]}>{item.population.toLocaleString()} Pop</Text>
                         </View>
                     </View>
                 </View>
@@ -125,23 +142,23 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, { backgroundColor: palette.screen }]}>
                 <ActivityIndicator size="large" color="#14B8A6" />
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, isEmbedded ? styles.containerEmbedded : styles.containerFull]}>
+        <View style={[styles.container, { backgroundColor: palette.screen }, isEmbedded ? styles.containerEmbedded : styles.containerFull]}>
             {/* Header Card */}
-            <View style={styles.headerCard}>
+            <View style={[styles.headerCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
                 <View style={styles.headerContent}>
                     <View style={styles.trophyIconBox}>
                         <Trophy size={24} color="#1E293B" />
                     </View>
                     <View>
-                        <Text style={styles.headerTitle}>Global Rankings</Text>
-                        <Text style={styles.headerSubtitle}>Simulated Leaders</Text>
+                        <Text style={[styles.headerTitle, { color: palette.text }]}>Global Rankings</Text>
+                        <Text style={[styles.headerSubtitle, { color: palette.muted }]}>Simulated Leaders</Text>
                     </View>
                 </View>
             </View>
@@ -177,9 +194,9 @@ export function LeaderboardTab({ isEmbedded }: LeaderboardTabProps) {
             )}
 
             {/* Info Note */}
-            <View style={styles.infoCard}>
+            <View style={[styles.infoCard, { backgroundColor: isDarkMode ? 'rgba(20,184,166,0.08)' : 'rgba(20,184,166,0.05)', borderColor: isDarkMode ? 'rgba(20,184,166,0.18)' : 'rgba(20,184,166,0.1)' }]}>
                 <Text style={styles.infoTitle}>Expansion Note</Text>
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: palette.muted }]}>
                     Rankings are updated every time you complete a daily report or build infrastructure. Only the top 20 survivors are shown.
                 </Text>
             </View>

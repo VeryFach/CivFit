@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginScreen } from '@/components/common/LoginScreen';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCivStore } from '@/store/appStore';
 
@@ -16,6 +17,7 @@ import { useCivStore } from '@/store/appStore';
 export default function LoginRoute() {
     const { currentUser } = useAuth();
     const storeLoading = useCivStore((state) => state.loading);
+    const isDarkMode = useColorScheme() === 'dark';
 
     // Auto-redirect if user is already logged in
     useFocusEffect(
@@ -27,7 +29,7 @@ export default function LoginRoute() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#0F172A' : '#FDF6E3' }]}>
             <View style={styles.content}>
                 <LoginScreen />
             </View>
@@ -38,7 +40,6 @@ export default function LoginRoute() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FDF6E3',
     },
     content: {
         flex: 1,
