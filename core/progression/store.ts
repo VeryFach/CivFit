@@ -1,5 +1,5 @@
-import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
-import { auth, db } from '@/services/firebase/index';
+import { handleFirestoreError, OperationType } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import {
     collection,

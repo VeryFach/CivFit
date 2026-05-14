@@ -35,10 +35,16 @@ export const sanitizeBuildings = (buildings: PlacedBuilding[]): PlacedBuilding[]
 // ---------------------------------------------------------------------------
 // UTILITY: Validasi satu pasang koordinat (digunakan sebelum onDeploy)
 // ---------------------------------------------------------------------------
-export const isValidGridCoord = (x: number, y: number): boolean =>
-  Number.isInteger(x) && Number.isInteger(y) &&
-  x >= 0 && x < GRID_SIZE &&
-  y >= 0 && y < GRID_SIZE;
+export const isValidGridCoord = (x: any, y: any): boolean => {
+  const nx = Number(x);
+  const ny = Number(y);
+  return (
+    Number.isInteger(nx) &&
+    Number.isInteger(ny) &&
+    nx >= 0 && nx < 10 && // Paksa angka 10 jika GRID_SIZE ragu
+    ny >= 0 && ny < 10
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Kalkulasi ringkasan kota

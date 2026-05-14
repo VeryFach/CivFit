@@ -79,7 +79,7 @@ function usePalette() {
         accentRed: '#EF4444',
         // Tambahan overlay untuk badge/elemen agar menyesuaikan tema
         overlay: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-        
+
         // Komponen spesifik - Diperbaiki agar adaptif dengan Light Mode
         dashboardBg: isDark ? '#1E293B' : '#FFFFFF',
         dashboardBorder: isDark ? '#334155' : '#E2E8F0',
@@ -109,13 +109,13 @@ interface CityTabProps {
     city: CityState;
     buildings: PlacedBuilding[];
     stats: UserStats;
-    onDeploy: (buildingId: string, x: number, y: number, cost: number) => void;
+    // SAMAKAN URUTANNYA DENGAN STORE: ID, Cost, X, Y
+    onDeploy: (buildingId: string, cost: number, x: number, y: number) => void;
     onUpgrade: (buildingId: string, cost: number) => void;
     onRemove: (buildingId: string) => void;
     onSwitchTab: (tab: string) => void;
     isLoadingBuildings?: boolean;
 }
-
 export default function CityTab({
     city,
     buildings = [],
@@ -158,31 +158,35 @@ export default function CityTab({
 
     // Filter dan scaling bangunan
     const filteredBuildings = useMemo(() => {
-    const totalBuildings = buildings?.length || 0; // Beri pengaman
-    
-    // Tambahkan pengaman (BUILDINGS || []) agar tidak crash
-    return (BUILDINGS || []).filter(b => {
-        const era = (ERAS_CONFIG || []).find(e => e.id === b.era);
-        const isUnlocked = stats?.level >= (era?.minLevel || 0);
-        const matchesFilter = filter === 'all' || b.category === filter;
-        const matchesSearch = b.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-        return isUnlocked && matchesFilter && matchesSearch;
-    }).map(b => ({
-        ...b,
-        costSilver: getScaledCost(b.costSilver, totalBuildings),
-        costGold: getScaledCost(b.costGold, totalBuildings),
-    }));
-}, [stats?.level, filter, debouncedSearchQuery, buildings?.length]);
+        const totalBuildings = buildings?.length || 0; // Beri pengaman
+
+        // Tambahkan pengaman (BUILDINGS || []) agar tidak crash
+        return (BUILDINGS || []).filter(b => {
+            const era = (ERAS_CONFIG || []).find(e => e.id === b.era);
+            const isUnlocked = stats?.level >= (era?.minLevel || 0);
+            const matchesFilter = filter === 'all' || b.category === filter;
+            const matchesSearch = b.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+            return isUnlocked && matchesFilter && matchesSearch;
+        }).map(b => ({
+            ...b,
+            costSilver: getScaledCost(b.costSilver, totalBuildings),
+            costGold: getScaledCost(b.costGold, totalBuildings),
+        }));
+    }, [stats?.level, filter, debouncedSearchQuery, buildings?.length]);
 
     // Handler tile click
     const handleTileClick = useCallback((x: number, y: number) => {
-        if (!isValidGridCoord(x, y)) return;
+        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
+            console.error(`Blocked invalid click at: ${x}_${y}`);
+            return;
+        }
         const coordKey = `${x}_${y}`;
         const building = buildingMap[coordKey];
 
         if (selectedBuildingType) {
             if (!building && stats.silver >= selectedBuildingType.costSilver) {
-                onDeploy(selectedBuildingType.id, x, y, selectedBuildingType.costSilver);
+                // SAMAKAN URUTANNYA: ID, Cost, X, Y
+                onDeploy(selectedBuildingType.id, selectedBuildingType.costSilver, x, y);
                 setSelectedBuildingType(null);
             }
             return;

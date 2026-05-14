@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect } from 'react';
-import { useCivStore } from './appStore';
+import { useCivStore } from '@/store';
 
 /**
  * CivfitProvider - Context wrapper for Zustand store

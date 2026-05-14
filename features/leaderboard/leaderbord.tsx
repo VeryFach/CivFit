@@ -1,6 +1,6 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
-import { db } from '@/services/firebase/index';
+import { handleFirestoreError, OperationType } from '@/services/firebase';
+import { db } from '@/services/firebase';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Medal, TrendingUp, Trophy, Users } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';

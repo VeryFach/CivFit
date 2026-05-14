@@ -2,7 +2,7 @@ import { DEFAULT_HP, EXP_PER_LEVEL, GRID_SIZE } from '@/core/constants';
 import { DayReport, processEndDay } from '@/core/progression/engine';
 import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '@/core/types';
 import { auth, db } from '@/services/firebase';
-import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
+import { handleFirestoreError, OperationType } from '@/services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import {
     collection,
@@ -424,6 +424,13 @@ export const useCivStore = create<CivState>((set, get) => ({
     ) => {
         if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
             console.error(`[deployBuilding] Invalid coords: (${x}_${y})`);
+            console.log("DEBUG DEPLOY:", {
+                inputX: x,
+                typeX: typeof x,
+                inputY: y,
+                typeY: typeof y,
+                stack: new Error().stack // Ini akan memberi tahu fungsi mana yang memanggilnya
+            });
             return false;
         }
 
