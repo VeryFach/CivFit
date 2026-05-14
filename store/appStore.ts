@@ -1,31 +1,33 @@
-import { create } from 'zustand';
-import { UserStats, Habit, CityState, ActivityLog, Era, HabitType, PlacedBuilding } from '@/core/types';
-import { EXP_PER_LEVEL, DEFAULT_HP } from '@/core/constants';
-import { processEndDay, DayReport } from '@/core/progression/engine';
+import { DEFAULT_HP, EXP_PER_LEVEL, GRID_SIZE } from '@/core/constants';
+import { DayReport, processEndDay } from '@/core/progression/engine';
+import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '@/core/types';
 import { auth, db } from '@/services/firebase';
-import {
-    doc,
-    setDoc,
-    onSnapshot,
-    collection,
-    query,
-    orderBy,
-    limit,
-    Timestamp,
-    serverTimestamp,
-    writeBatch,
-    deleteDoc
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '@/services/firebase/firestoreUtils';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    increment,
+    limit,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+    Timestamp,
+    writeBatch
+} from 'firebase/firestore';
+import { create } from 'zustand';
 
 interface CivState {
     currentUser: User | null;
     loading: boolean;
     stats: UserStats;
     habits: Habit[];
-    city: CityState;
+    city: CityState;          // ✅ tanpa buildings
     logs: ActivityLog[];
+    buildings: PlacedBuilding[];  // ✅ state terpisah
 
     // Actions
     initialize: () => void;
@@ -41,6 +43,7 @@ interface CivState {
     removeBuilding: (id: string) => Promise<void>;
     unlockEvolution: (branchId: string) => Promise<boolean>;
     addLog: (type: ActivityLog['type'], message: string, change: number, unit: ActivityLog['unit']) => Promise<void>;
+    cleanOutOfBoundBuildings: () => Promise<number>;
 }
 
 const INITIAL_STATS: UserStats = {
@@ -68,9 +71,9 @@ const INITIAL_CITY: CityState = {
     housing: 0,
     health: 100,
     happiness: 100,
-    buildings: [],
     currentEra: Era.STONE_AGE,
     unlockedEvolutions: []
+    // ✅ tidak ada field buildings
 };
 
 export const useCivStore = create<CivState>((set, get) => ({
@@ -80,13 +83,14 @@ export const useCivStore = create<CivState>((set, get) => ({
     habits: [],
     city: INITIAL_CITY,
     logs: [],
+    buildings: [],
 
     initialize: () => {
         onAuthStateChanged(auth, (user) => {
             set({ currentUser: user });
 
             if (user) {
-                // Sync User Stats & City
+                // 1. Sync User Stats & City (tanpa buildings)
                 const userDocRef = doc(db, 'users', user.uid);
                 onSnapshot(userDocRef, (snapshot) => {
                     if (snapshot.exists()) {
@@ -97,7 +101,6 @@ export const useCivStore = create<CivState>((set, get) => ({
                             loading: false
                         });
                     } else {
-                        // Create new user
                         const initialData = {
                             stats: INITIAL_STATS,
                             city: INITIAL_CITY,
@@ -110,7 +113,7 @@ export const useCivStore = create<CivState>((set, get) => ({
                     }
                 }, (error) => handleFirestoreError(error, OperationType.GET, `users/${user.uid}`));
 
-                // Sync Habits
+                // 2. Sync Habits
                 const habitsRef = collection(db, 'users', user.uid, 'habits');
                 onSnapshot(query(habitsRef), (snapshot) => {
                     const habitsList = snapshot.docs.map(doc => {
@@ -126,7 +129,7 @@ export const useCivStore = create<CivState>((set, get) => ({
                     set({ habits: habitsList });
                 }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/habits`));
 
-                // Sync Activity Logs
+                // 3. Sync Activity Logs
                 const logsRef = collection(db, 'users', user.uid, 'logs');
                 onSnapshot(query(logsRef, orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                     const logsList = snapshot.docs.map(doc => {
@@ -141,8 +144,74 @@ export const useCivStore = create<CivState>((set, get) => ({
                     });
                     set({ logs: logsList });
                 }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/logs`));
+
+                // ✅ 4. Sync Buildings (subcollection)
+                const buildingsRef = collection(db, 'users', user.uid, 'buildings');
+                onSnapshot(buildingsRef, (snapshot) => {
+                    console.log(
+                        'RAW DOCS:',
+                        snapshot.docs.map(d => ({
+                            id: d.id,
+                            data: d.data()
+                        }))
+                    );
+                    const buildingsList = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            buildingTypeId: data.buildingTypeId,
+                            gridX: data.gridX,
+                            gridY: data.gridY,
+                            level: data.level,
+                            health: data.health,
+                            createdAt: data.createdAt instanceof Timestamp
+                                ? data.createdAt.toDate().toISOString()
+                                : data.createdAt
+                        } as PlacedBuilding;
+                    });
+                    const validBuildings =
+                        buildingsList.filter(b =>
+                            b.gridX >= 0 &&
+                            b.gridX < GRID_SIZE &&
+                            b.gridY >= 0 &&
+                            b.gridY < GRID_SIZE
+                        );
+
+                    set({
+                        buildings: validBuildings
+                    });
+
+                    // ✅ AUTO-CLEANUP: Delete invalid buildings from Firestore
+                    const invalidBuildings = buildingsList.filter(b =>
+                        b.gridX < 0 || b.gridX >= GRID_SIZE ||
+                        b.gridY < 0 || b.gridY >= GRID_SIZE
+                    );
+
+                    if (invalidBuildings.length > 0) {
+                        console.warn(`⚠️  Found ${invalidBuildings.length} invalid building(s). Starting aggressive cleanup...`);
+
+                        // Delete each building individually with retry logic
+                        invalidBuildings.forEach(async (b) => {
+                            try {
+                                const ref = doc(db, 'users', user.uid, 'buildings', b.id);
+                                await deleteDoc(ref);
+                                console.log(`   ✅ Deleted: ${b.id} (${b.buildingTypeId}) @ [${b.gridX}, ${b.gridY}]`);
+                            } catch (error: any) {
+                                console.error(`   ❌ Failed to delete ${b.id}:`, error.message);
+                                // Retry once
+                                try {
+                                    const ref = doc(db, 'users', user.uid, 'buildings', b.id);
+                                    await deleteDoc(ref);
+                                    console.log(`   ✅ Retry successful for ${b.id}`);
+                                } catch (retryError: any) {
+                                    console.error(`   ❌ Retry failed for ${b.id}:`, retryError.message);
+                                }
+                            }
+                        });
+                    }
+                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/buildings`));
             } else {
-                set({ loading: false, habits: [], logs: [], stats: INITIAL_STATS, city: INITIAL_CITY });
+                set({ loading: false, habits: [], logs: [], buildings: [], stats: INITIAL_STATS, city: INITIAL_CITY });
             }
         });
     },
@@ -269,7 +338,7 @@ export const useCivStore = create<CivState>((set, get) => ({
             set({ stats: updatedStats, habits: habits.map(habit => habit.id === id ? updatedHabit : habit) });
         }
 
-        addLog('habit', `Completed: ${h.title}`, h.goldReward, 'gold');
+        await addLog('habit', `Completed: ${h.title}`, h.goldReward, 'gold');
     },
 
     updateHabit: async (id, updates) => {
@@ -292,10 +361,25 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     endDay: async () => {
-        const { stats, city, habits, currentUser, addLog, addHabit } = get();
+        const {
+            stats,
+            city,
+            buildings,
+            habits,
+            currentUser,
+            addLog,
+            addHabit
+        } = get();
         const today = new Date().toISOString().split('T')[0];
 
-        const { updatedStats, updatedCity, report, resetHabitIds } = processEndDay(stats, city, habits, today);
+        // ✅ processEndDay harus sudah disesuaikan menerima city tanpa buildings
+        const { updatedStats, updatedCity, report, resetHabitIds } = processEndDay(
+            stats,
+            city,
+            buildings,
+            habits,
+            today
+        )
 
         if (report.event) {
             await addHabit(`Mitigasi: ${report.event.name}`, 'daily');
@@ -331,83 +415,136 @@ export const useCivStore = create<CivState>((set, get) => ({
         return report;
     },
 
-    deployBuilding: async (buildingTypeId, silverCost, x, y) => {
-        const { stats, city, currentUser, addLog } = get();
-        if (stats.silver < silverCost) return false;
-
-        const buildingId = Math.random().toString(36).substring(2, 11);
-        const newBuilding: PlacedBuilding = {
-            id: buildingId,
-            buildingTypeId,
-            gridX: x,
-            gridY: y,
-            level: 1,
-            health: 100,
-            createdAt: new Date().toISOString()
-        };
-
-        const newCity = {
-            ...city,
-            buildings: [...(city.buildings || []), newBuilding]
-        };
-        const newStats = { ...stats, silver: stats.silver - silverCost };
-
-        if (currentUser) {
-            const batch = writeBatch(db);
-            batch.set(doc(db, 'users', currentUser.uid), { stats: newStats, city: newCity, updatedAt: serverTimestamp() }, { merge: true });
-            batch.set(doc(db, 'leaderboard', currentUser.uid), {
-                population: newCity.population,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-            await batch.commit();
-        } else {
-            set({ stats: newStats, city: newCity });
+    // ✅ DEPLOY BUILDING - buat dokumen di subcollection
+    deployBuilding: async (
+        buildingTypeId,
+        silverCost,
+        x,
+        y
+    ) => {
+        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
+            console.error(`[deployBuilding] Invalid coords: (${x}_${y})`);
+            return false;
         }
 
-        addLog('city', `Constructed ${buildingTypeId}`, -silverCost, 'silver');
+        const {
+            stats,
+            currentUser,
+            addLog
+        } = get();
+
+        if (stats.silver < silverCost)
+            return false;
+
+        if (!currentUser)
+            return false;
+
+        const batch =
+            writeBatch(db);
+
+        // USER REF
+        const userRef =
+            doc(
+                db,
+                'users',
+                currentUser.uid
+            );
+
+        batch.set(
+            userRef,
+            {
+                'stats.silver':
+                    stats.silver -
+                    silverCost,
+
+                updatedAt:
+                    serverTimestamp()
+            },
+            {
+                merge: true
+            }
+        );
+
+        // BUILDING ID
+        const buildingId =
+            `${x}_${y}`;
+
+        console.log(`✅ Deploying building: ${buildingTypeId} at [${x}, ${y}] (ID: ${buildingId})`);
+
+        const buildingRef =
+            doc(
+                db,
+                'users',
+                currentUser.uid,
+                'buildings',
+                buildingId
+            );
+
+        // BUILDING DATA
+        batch.set(
+            buildingRef,
+            {
+                buildingTypeId,
+
+                gridX: x,
+
+                gridY: y,
+
+                level: 1,
+
+                health: 100,
+
+                createdAt:
+                    serverTimestamp()
+            }
+        );
+
+        await batch.commit();
+
+        await addLog(
+            'city',
+            `Constructed ${buildingTypeId}`,
+            -silverCost,
+            'silver'
+        );
+
         return true;
     },
 
+    // ✅ UPGRADE BUILDING - update dokumen building
     upgradeBuilding: async (id, silverCost) => {
-        const { stats, city, currentUser, addLog } = get();
+        const { stats, currentUser, addLog } = get();
         if (stats.silver < silverCost) return false;
+        if (!currentUser) return false;
 
-        const newCity = {
-            ...city,
-            buildings: (city.buildings || []).map(b =>
-                b.id === id ? { ...b, level: b.level + 1 } : b
-            )
-        };
-        const newStats = { ...stats, silver: stats.silver - silverCost };
+        const batch = writeBatch(db);
+        const userRef = doc(db, 'users', currentUser.uid);
+        batch.set(userRef, {
+            'stats.silver': stats.silver - silverCost,
+            updatedAt: serverTimestamp()
+        },
+            {
+                merge: true
+            });
 
-        if (currentUser) {
-            await setDoc(doc(db, 'users', currentUser.uid), { stats: newStats, city: newCity, updatedAt: serverTimestamp() }, { merge: true });
-        } else {
-            set({ stats: newStats, city: newCity });
-        }
+        const buildingRef = doc(db, 'users', currentUser.uid, 'buildings', id);
+        batch.update(buildingRef, { level: increment(1) });
 
-        addLog('city', `Upgraded building`, -silverCost, 'silver');
+        await batch.commit();
+        await addLog('city', `Upgraded building`, -silverCost, 'silver');
         return true;
     },
 
+    // ✅ REMOVE BUILDING - hapus dokumen
     removeBuilding: async (id) => {
-        const { stats, city, currentUser, addLog } = get();
-        const newCity = {
-            ...city,
-            buildings: (city.buildings || []).filter(b => b.id !== id)
-        };
-
-        if (currentUser) {
-            await setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true });
-        } else {
-            set({ city: newCity });
-        }
-
-        addLog('city', `Removed building`, 0, 'silver');
+        const { currentUser, addLog } = get();
+        if (!currentUser) return;
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'buildings', id));
+        await addLog('city', `Removed building`, 0, 'silver');
     },
 
     unlockEvolution: async (branchId) => {
-        const { stats, city, currentUser, addLog } = get();
+        const { city, currentUser, addLog } = get();
         if (city.unlockedEvolutions?.includes(branchId)) return false;
 
         const newCity = {
@@ -421,7 +558,43 @@ export const useCivStore = create<CivState>((set, get) => ({
             set({ city: newCity });
         }
 
-        addLog('system', `Evolution unlocked: ${branchId}`, 0, 'exp');
+        await addLog('system', `Evolution unlocked: ${branchId}`, 0, 'exp');
         return true;
+    },
+
+    // ✅ CLEAN OUT OF BOUND BUILDINGS - hapus bangunan di luar grid
+    cleanOutOfBoundBuildings: async () => {
+        const { buildings, currentUser } = get();
+        if (!currentUser) {
+            console.error('❌ Cannot cleanup: No user logged in');
+            return 0;
+        }
+
+        const outOfBounds = buildings.filter(b =>
+            b.gridX < 0 || b.gridX >= GRID_SIZE ||
+            b.gridY < 0 || b.gridY >= GRID_SIZE
+        );
+
+        if (outOfBounds.length === 0) {
+            console.log('✅ No out-of-bounds buildings found');
+            return 0;
+        }
+
+        console.warn(`⚠️  Found ${outOfBounds.length} out-of-bounds building(s). Deleting...`);
+
+        let deleted = 0;
+        for (const b of outOfBounds) {
+            try {
+                const ref = doc(db, 'users', currentUser.uid, 'buildings', b.id);
+                await deleteDoc(ref);
+                console.log(`   ✅ Deleted: ${b.id} @ [${b.gridX}, ${b.gridY}]`);
+                deleted++;
+            } catch (error: any) {
+                console.error(`   ❌ Failed to delete ${b.id}:`, error.message);
+            }
+        }
+
+        console.log(`✅ Cleanup complete: Deleted ${deleted}/${outOfBounds.length} buildings`);
+        return deleted;
     }
 }));

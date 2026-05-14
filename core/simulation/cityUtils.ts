@@ -1,5 +1,5 @@
-import { BUILDINGS } from '../constants';
-import { CityState } from '../types';
+import { BUILDINGS, GRID_SIZE } from '../constants';
+import { CityState, PlacedBuilding } from '../types';
 
 export interface CitySummary {
   totalHousing: number;
@@ -17,7 +17,38 @@ export interface CitySummary {
   happinessImpact: number;
 }
 
-export const calculateCitySummary = (city: CityState): CitySummary => {
+// ---------------------------------------------------------------------------
+// UTILITY: Filter bangunan dengan koordinat di luar batas grid.
+// Dipanggil di semua titik yang mengakses buildings agar data lama
+// yang korup (gridY > 9, dll) tidak memengaruhi kalkulasi maupun rendering.
+// ---------------------------------------------------------------------------
+export const sanitizeBuildings = (buildings: PlacedBuilding[]): PlacedBuilding[] =>
+  (buildings || []).filter(b =>
+    typeof b.gridX === 'number' &&
+    typeof b.gridY === 'number' &&
+    Number.isInteger(b.gridX) &&
+    Number.isInteger(b.gridY) &&
+    b.gridX >= 0 && b.gridX < GRID_SIZE &&
+    b.gridY >= 0 && b.gridY < GRID_SIZE
+  );
+
+// ---------------------------------------------------------------------------
+// UTILITY: Validasi satu pasang koordinat (digunakan sebelum onDeploy)
+// ---------------------------------------------------------------------------
+export const isValidGridCoord = (x: number, y: number): boolean =>
+  Number.isInteger(x) && Number.isInteger(y) &&
+  x >= 0 && x < GRID_SIZE &&
+  y >= 0 && y < GRID_SIZE;
+
+// ---------------------------------------------------------------------------
+// Kalkulasi ringkasan kota
+// NOTE: city sekarang TIDAK mengandung field buildings.
+// Buildings dikirim sebagai parameter terpisah.
+// ---------------------------------------------------------------------------
+export const calculateCitySummary = (
+  city: Omit<CityState, 'buildings'>,
+  buildings: PlacedBuilding[]
+): CitySummary => {
   let totalHousing = 0;
   let totalFoodProduction = 0;
   let totalSilverIncome = 0;
@@ -32,7 +63,9 @@ export const calculateCitySummary = (city: CityState): CitySummary => {
   if (evolutions.includes('mercantile')) totalSilverIncome += 100;
   if (evolutions.includes('industrialist')) constructionCostMultiplier *= 0.8;
 
-  (city.buildings || []).forEach(pb => {
+  // Gunakan sanitizeBuildings agar bangunan out-of-bounds tidak dihitung
+  const validBuildings = sanitizeBuildings(buildings);
+  validBuildings.forEach(pb => {
     const type = BUILDINGS.find(t => t.id === pb.buildingTypeId);
     if (type) {
       const levelMult = 1 + (pb.level - 1) * 0.2;
@@ -93,6 +126,9 @@ export const calculateCitySummary = (city: CityState): CitySummary => {
   };
 };
 
+// ---------------------------------------------------------------------------
+// Status helpers (tidak bergantung pada buildings, tetap sama)
+// ---------------------------------------------------------------------------
 export const getHealthStatus = (health: number) => {
   if (health >= 80) return { label: 'Optimal', color: '#14B8A6', description: 'Warga sangat sehat dan produktif.' };
   if (health >= 60) return { label: 'Baik', color: '#14B8A6', description: 'Kondisi kesehatan stabil.' };

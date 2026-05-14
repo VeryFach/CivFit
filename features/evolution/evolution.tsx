@@ -10,7 +10,7 @@ import {
     Animated,
     ActivityIndicator,
 } from 'react-native';
-import { UserStats, CityState, Era, EvolutionBranch } from '@/core/types';
+import { UserStats, CityState, Era, EvolutionBranch, PlacedBuilding } from '@/core/types';
 import { ERAS_CONFIG, EVOLUTION_BRANCHES } from '@/core/constants';
 import * as Icons from 'lucide-react-native';
 import {
@@ -29,12 +29,13 @@ import {
 
 interface EvolutionTabProps {
     stats: UserStats;
-    city: CityState;
+    city: CityState;          // sudah tidak mengandung buildings
+    buildings: PlacedBuilding[]; // ✅ buildings dari state terpisah
     onBack: () => void;
     onUnlock: (branchId: string) => Promise<boolean>;
 }
 
-export default function EvolutionTab({ stats, city, onBack, onUnlock }: EvolutionTabProps) {
+export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock }: EvolutionTabProps) {
     const [selectedEra, setSelectedEra] = useState<Era | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<EvolutionBranch | null>(null);
     const [isUnlocking, setIsUnlocking] = useState(false);
@@ -71,9 +72,6 @@ export default function EvolutionTab({ stats, city, onBack, onUnlock }: Evolutio
             setSelectedBranch(null);
         });
     };
-
-    // Untuk progress bar connect antar era (opsional, di web ada garis)
-    // Tidak diimplementasikan karena terlalu kompleks di RN, garis bisa diabaikan atau pakai absolute positioning sederhana
 
     const renderEraTimeline = () => {
         return (
@@ -130,6 +128,17 @@ export default function EvolutionTab({ stats, city, onBack, onUnlock }: Evolutio
                 })}
             </View>
         );
+    };
+
+    // Helper untuk mengecek requirement building
+    const checkBuildingRequirement = (target: string | number): boolean => {
+        if (typeof target === 'string') {
+            // target adalah buildingTypeId, butuh minimal 2 bangunan tipe itu
+            const count = buildings.filter(b => b.buildingTypeId === target).length;
+            return count >= 2;
+        }
+        // jika target adalah angka (misal jumlah total), tapi biasanya tidak dipakai
+        return false;
     };
 
     const renderModal = () => {
@@ -232,8 +241,9 @@ export default function EvolutionTab({ stats, city, onBack, onUnlock }: Evolutio
                                                 isMet = stats.level >= (req.target as number);
                                             } else if (req.type === 'buildings') {
                                                 const target = req.target as string;
-                                                const count = city.buildings.filter(b => b.buildingTypeId === target).length;
-                                                const required = typeof req.target === 'string' ? 2 : (req.target as number);
+                                                // menggunakan buildings dari props
+                                                const count = buildings.filter(b => b.buildingTypeId === target).length;
+                                                const required = 2; // default requirement untuk buildings adalah minimal 2
                                                 isMet = count >= required;
                                             }
                                             return (
@@ -270,7 +280,7 @@ export default function EvolutionTab({ stats, city, onBack, onUnlock }: Evolutio
                                                     if (req.type === 'level') return stats.level >= (req.target as number);
                                                     if (req.type === 'buildings') {
                                                         const target = req.target as string;
-                                                        const count = city.buildings.filter(b => b.buildingTypeId === target).length;
+                                                        const count = buildings.filter(b => b.buildingTypeId === target).length;
                                                         return count >= 2;
                                                     }
                                                     return true;
@@ -510,7 +520,6 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         marginTop: 2,
     },
-    // Modal styles
     modalOverlay: {
         position: 'absolute',
         top: 0,
@@ -597,7 +606,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     branchCard: {
-        width: (width - 72) / 2, // 2 columns with padding
+        width: (width - 72) / 2,
         backgroundColor: '#F1F5F9',
         borderRadius: 32,
         padding: 20,

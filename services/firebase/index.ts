@@ -102,9 +102,9 @@ try {
     firestoreInstance =
         firebaseConfig.firestoreDatabaseId
             ? getFirestore(
-                  app,
-                  firebaseConfig.firestoreDatabaseId
-              )
+                app,
+                firebaseConfig.firestoreDatabaseId
+            )
             : getFirestore(app);
 
 } catch (error) {

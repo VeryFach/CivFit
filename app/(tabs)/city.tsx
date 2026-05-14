@@ -1,11 +1,11 @@
+import Evolution from '@/features/evolution/evolution';
+import CityScreen from '@/features/simulation/CityScreen';
+import { useCivStore } from '@/store';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import CityScreen from '@/features/simulation/CityScreen';
-import Evolution from '@/features/evolution/evolution';
-import { useCivStore } from '@/store';
 
 export default function CityTab() {
-    const { city, stats, deployBuilding, upgradeBuilding, removeBuilding, unlockEvolution } = useCivStore();
+    const { city, stats, buildings, deployBuilding, upgradeBuilding, removeBuilding, unlockEvolution } = useCivStore();
     const [activeTab, setActiveTab] = useState<'city' | 'evolution'>('city');
 
     const handleSwitchTab = (tab: string) => {
@@ -23,6 +23,7 @@ export default function CityTab() {
                 <CityScreen
                     city={city}
                     stats={stats}
+                    buildings={buildings}
                     onDeploy={deployBuilding}
                     onUpgrade={upgradeBuilding}
                     onRemove={removeBuilding}
@@ -33,6 +34,7 @@ export default function CityTab() {
                 <Evolution
                     stats={stats}
                     city={city}
+                    buildings={buildings}
                     onBack={() => setActiveTab('city')}
                     onUnlock={handleUnlock}
                 />

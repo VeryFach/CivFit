@@ -107,7 +107,6 @@ export interface CityState {
     housing: number;
     health: number; // 0-100 percentage
     happiness: number; // 0-100 percentage
-    buildings: PlacedBuilding[];
     currentEra: Era;
     unlockedEvolutions: string[]; // List of branch IDs
 }

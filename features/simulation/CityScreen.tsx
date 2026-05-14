@@ -1,6 +1,7 @@
 import { BUILDINGS, ERAS_CONFIG, GRID_SIZE } from '@/core/constants';
-import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus } from '@/core/simulation/cityUtils';
+import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus, isValidGridCoord } from '@/core/simulation/cityUtils';
 import { BuildingType, CityState, Era, PlacedBuilding, UserStats } from '@/core/types';
+import { useDebounce } from '@/hooks/useDebounce'; // asumsikan hook ini ada, atau buat inline
 import * as LucideIcons from 'lucide-react-native';
 import {
     AlertTriangle,
@@ -13,8 +14,9 @@ import {
     TrendingUp,
     X
 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
     SafeAreaView,
     ScrollView,
@@ -26,58 +28,89 @@ import {
     View
 } from 'react-native';
 
-// --- helper IconRenderer (sama seperti asli)
+// Helper IconRenderer (tetap sama)
 const IconRenderer = ({ name, size = 24, color = '#000' }: { name: string; size?: number; color?: string }) => {
     const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
     return <Icon size={size} color={color} />;
 };
 
+// Utility untuk menghitung biaya scaling (dipisahkan agar konsisten)
+const getScaledCost = (baseCost: number, totalBuildings: number): number => {
+    const scalar = 1 + totalBuildings * 0.05;
+    return Math.floor(baseCost * scalar);
+};
+
+// Komponen loading skeleton untuk grid (opsional)
+const GridSkeleton = ({ size, count }: { size: number; count: number }) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {Array.from({ length: count }).map((_, i) => (
+            <View key={i} style={{ width: size, height: size, padding: 2 }}>
+                <View style={{ flex: 1, borderRadius: 12, backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#94A3B8" />
+                </View>
+            </View>
+        ))}
+    </View>
+);
+
 interface CityTabProps {
     city: CityState;
+    buildings: PlacedBuilding[];
     stats: UserStats;
     onDeploy: (buildingId: string, x: number, y: number, cost: number) => void;
     onUpgrade: (buildingId: string, cost: number) => void;
     onRemove: (buildingId: string) => void;
     onSwitchTab: (tab: string) => void;
+    isLoadingBuildings?: boolean; // optional loading state dari parent
 }
 
-export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, onSwitchTab }: CityTabProps) {
-    const [activeTab, setActiveTab] = useState<'city' | 'evolution'>('city');
+export default function CityTab({
+    city,
+    buildings = [],
+    stats,
+    onDeploy,
+    onUpgrade,
+    onRemove,
+    onSwitchTab,
+    isLoadingBuildings = false
+}: CityTabProps) {
+
+
+    //const [activeTab, setActiveTab] = useState<'city' | 'evolution'>('city');
     const { width: screenWidth } = useWindowDimensions();
     const [selectedBuildingType, setSelectedBuildingType] = useState<BuildingType | null>(null);
     const [selectedTile, setSelectedTile] = useState<{ x: number; y: number } | null>(null);
     const [filter, setFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const slideAnim = useRef(new Animated.Value(0)).current;
 
-    // Ukuran tile grid responsif (padding total 32, margin 16? disesuaikan)
+    // Layout calculations
     const GRID_PADDING = screenWidth > 400 ? 16 : 12;
-    const gridContainerPadding = GRID_PADDING * 2;
-    const availableWidth = screenWidth - 32 - gridContainerPadding; // padding horizontal container (16 kiri/kanan) + padding grid internal
+    const availableWidth = screenWidth - 32 - (GRID_PADDING * 2);
     const GRID_ITEM_SIZE = availableWidth / GRID_SIZE;
 
+    // Mapping koordinat ke building
     const buildingMap = useMemo(() => {
         const map: Record<string, PlacedBuilding> = {};
-        (city.buildings || []).forEach(b => {
-            map[`${b.gridX},${b.gridY}`] = b;
+        buildings.forEach(b => {
+            map[`${b.gridX}_${b.gridY}`] = b;
         });
-        
-        // DEBUG: Log mismatched building types
-        const mismatched = (city.buildings || []).filter(b => !BUILDINGS.find(t => t.id === b.buildingTypeId));
+        // Validasi mismatch
+        const mismatched = buildings.filter(b => !BUILDINGS.find(t => t.id === b.buildingTypeId));
         if (mismatched.length > 0) {
-            console.warn('[CityTab] WARNING: Found mismatched building types:', 
-                mismatched.map(b => ({ id: b.id, buildingTypeId: b.buildingTypeId, availableIds: BUILDINGS.map(t => t.id) }))
-            );
+            console.warn('[CityTab] Mismatched building types:', mismatched.map(b => b.buildingTypeId));
         }
-        
         return map;
-    }, [city.buildings]);
+    }, [buildings]);
 
-    const summary = useMemo(() => calculateCitySummary(city), [city]);
+    // Summary (menggunakan buildings terpisah)
+    const summary = useMemo(() => calculateCitySummary(city, buildings), [city, buildings]);
     const healthStatus = getHealthStatus(city.health);
-    const happinessStatus = getHappinessStatus(city.happiness || 100);
+    const happinessStatus = getHappinessStatus(city.happiness ?? 100);
     const productivityStatus = getProductivityStatus(summary.taxMultiplier);
 
+    // Era aesthetics
     const eraAesthetics = useMemo(() => {
         switch (city.currentEra) {
             case Era.STONE_AGE: return { bg: '#E5D3B3', grid: '#D2B48C', accent: '#8B4513' };
@@ -89,75 +122,40 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
         }
     }, [city.currentEra]);
 
+    // Filter dan scaling bangunan (menggunakan debounced search)
     const filteredBuildings = useMemo(() => {
-        const costScalar = 1 + (city.buildings.length * 0.05);
+        const totalBuildings = buildings.length;
         return BUILDINGS.filter(b => {
             const era = ERAS_CONFIG.find(e => e.id === b.era);
             const isUnlocked = stats.level >= (era?.minLevel || 0);
             const matchesFilter = filter === 'all' || b.category === filter;
-            const matchesSearch = b.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = b.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
             return isUnlocked && matchesFilter && matchesSearch;
         }).map(b => ({
             ...b,
-            costSilver: Math.floor(b.costSilver * costScalar),
-            costGold: Math.floor(b.costGold * costScalar),
+            costSilver: getScaledCost(b.costSilver, totalBuildings),
+            costGold: getScaledCost(b.costGold, totalBuildings),
         }));
-    }, [stats.level, filter, searchQuery, city.buildings.length]);
+    }, [stats.level, filter, debouncedSearchQuery, buildings.length]);
 
-    // DEBUG: Log buildings state changes
+    // Debug
     useEffect(() => {
-        console.log('[CityTab] Buildings state changed:', {
-            count: city.buildings.length,
-            buildings: city.buildings.map(b => ({
-                id: b.id,
-                buildingTypeId: b.buildingTypeId,
-                gridX: b.gridX,
-                gridY: b.gridY,
-                coords: `${b.gridX},${b.gridY}`,
-                level: b.level,
-                buildingTypeIdType: typeof b.buildingTypeId,
-                gridXType: typeof b.gridX,
-                gridYType: typeof b.gridY,
-            }))
-        });
-    }, [city.buildings]);
+        console.log('[CityTab] Buildings updated:', buildings.length);
+    }, [buildings]);
 
-    // UTILITY: Validate buildings data - log warning for out-of-bounds
-    const validateBuildingsData = () => {
-        const outOfBounds = (city.buildings || []).filter(b => 
-            b.gridX < 0 || b.gridX >= GRID_SIZE || b.gridY < 0 || b.gridY >= GRID_SIZE
-        );
+    // Handler tile click
+    const handleTileClick = useCallback((x: number, y: number) => {
         
-        if (outOfBounds.length > 0) {
-            console.warn('[CityTab] ⚠️  Out-of-bounds buildings detected:', 
-                outOfBounds.map(b => ({ 
-                    id: b.id, 
-                    coords: `(${b.gridX},${b.gridY})`,
-                    gridSize: `[0..${GRID_SIZE - 1}]`
-                }))
-            );
-            console.warn('[CityTab] Recommendation: Clean invalid buildings from store or rebuild city grid');
-        }
-    };
-
-    // Validate on mount and when city changes
-    useEffect(() => {
-        validateBuildingsData();
-    }, [city.buildings]);
-
-    const handleTileClick = (x: number, y: number) => {
-        // VALIDATION: Ensure coordinates are within grid bounds
-        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
-            console.warn(`[CityTab] Invalid coordinates: (${x},${y}) exceeds grid bounds [0..${GRID_SIZE - 1}]`);
-            return;
-        }
-
-        console.log(`[CityTab] Tile clicked: (${x},${y})`);
-        const coordKey = `${x},${y}`;
+        if (!isValidGridCoord(x, y)) {
+        console.error(`[handleTileClick] Invalid tile: (${x}_${y})`);
+        return;
+    }
+        const coordKey = `${x}_${y}`;
         const building = buildingMap[coordKey];
 
         if (selectedBuildingType) {
             if (!building && stats.silver >= selectedBuildingType.costSilver) {
+                console.log(`📍 Placing ${selectedBuildingType.id} at [${x}, ${y}]`);
                 onDeploy(selectedBuildingType.id, x, y, selectedBuildingType.costSilver);
                 setSelectedBuildingType(null);
             }
@@ -171,24 +169,30 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
             setSelectedTile(null);
             Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
         }
-    };
+    }, [buildingMap, selectedBuildingType, stats.silver, onDeploy, slideAnim]);
 
-    const closeDetail = () => {
+    const closeDetail = useCallback(() => {
         setSelectedTile(null);
         Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    };
+    }, [slideAnim]);
 
-    const handleTabSwitch = (tab: string) => {
-        if (tab === 'evolution') setActiveTab('evolution');
-        else setActiveTab('city');
-    }
-
+    // Render grid dengan loading state
     const renderGrid = () => {
+        if (isLoadingBuildings) {
+            return <GridSkeleton size={GRID_ITEM_SIZE} count={GRID_SIZE * GRID_SIZE} />;
+        }
+
         const tiles = [];
         for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
             const x = i % GRID_SIZE;
             const y = Math.floor(i / GRID_SIZE);
-            const building = buildingMap[`${x},${y}`];
+
+            if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
+                console.error(`❌ Grid render error: invalid coordinates at index ${i}: [${x}, ${y}]`);
+                continue;
+            }
+
+            const building = buildingMap[`${x}_${y}`];
             const type = building ? BUILDINGS.find(t => t.id === building.buildingTypeId) : null;
             const isSelected = selectedTile?.x === x && selectedTile?.y === y;
             const canPlace = selectedBuildingType && !building;
@@ -222,17 +226,10 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                             </>
                         )}
                         {!type && building && (
-                            <>
-                                <View style={{ alignItems: 'center', gap: 4 }}>
-                                    <AlertTriangle size={Math.max(16, GRID_ITEM_SIZE * 0.3)} color="#EF4444" />
-                                    <Text style={{ fontSize: 8, fontWeight: '800', color: '#EF4444', textAlign: 'center' }}>?</Text>
-                                </View>
-                                {building.level > 1 && (
-                                    <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#14B8A6', borderRadius: 12, paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1, borderColor: '#0F172A' }}>
-                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#0F172A' }}>L{building.level}</Text>
-                                    </View>
-                                )}
-                            </>
+                            <View style={{ alignItems: 'center', gap: 4 }}>
+                                <AlertTriangle size={Math.max(16, GRID_ITEM_SIZE * 0.3)} color="#EF4444" />
+                                <Text style={{ fontSize: 8, fontWeight: '800', color: '#EF4444', textAlign: 'center' }}>?</Text>
+                            </View>
                         )}
                         {canPlace && !building && (
                             <Hammer size={GRID_ITEM_SIZE * 0.25} color="#1E293B" style={{ opacity: 0.4 }} />
@@ -256,7 +253,8 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
         );
     };
 
-    // Font scaling responsif
+
+    // Ukuran font responsif
     const titleFontSize = Math.min(32, screenWidth * 0.08);
     const resourceValueFont = Math.min(24, screenWidth * 0.06);
     const smallCapsFont = Math.max(8, screenWidth * 0.022);
@@ -269,6 +267,7 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
             >
                 {/* Dashboard Card */}
                 <View style={[styles.dashboardCard, { padding: screenWidth > 400 ? 24 : 16 }]}>
+                    {/* Header era dan stats */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 24 }}>
                         <View>
                             <Text style={[styles.eraTitle, { fontSize: titleFontSize }]}>{city.currentEra}</Text>
@@ -288,7 +287,7 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                         </View>
                     </View>
 
-                    {/* Resource cards - wrap on small screens */}
+                    {/* Resource cards (sama seperti sebelumnya) */}
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
                         <View style={[styles.resourceCard, summary.isHomeless && styles.resourceCardWarning, { flexBasis: screenWidth > 500 ? '48%' : '100%' }]}>
                             <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', opacity: 0.7 }}>Citizens / Housing</Text>
@@ -317,10 +316,10 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                         </View>
                         <View style={[styles.resourceCard, { flexBasis: screenWidth > 500 ? '48%' : '100%' }]}>
                             <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', opacity: 0.7 }}>Happiness</Text>
-                            <Text style={{ fontSize: resourceValueFont, fontWeight: '900', marginVertical: 4 }}>{city.happiness || 100}%</Text>
+                            <Text style={{ fontSize: resourceValueFont, fontWeight: '900', marginVertical: 4 }}>{city.happiness ?? 100}%</Text>
                             <Text style={[styles.eraSub, { color: happinessStatus.color, fontSize: smallCapsFont }]}>{happinessStatus.label}</Text>
                             <View style={styles.progressBar}>
-                                <View style={[styles.progressFill, { width: `${city.happiness || 100}%`, backgroundColor: happinessStatus.color.replace('text-', '') }]} />
+                                <View style={[styles.progressFill, { width: `${city.happiness ?? 100}%`, backgroundColor: happinessStatus.color.replace('text-', '') }]} />
                             </View>
                         </View>
                     </View>
@@ -425,20 +424,22 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                     </ScrollView>
                 </View>
 
-                {/* Slide-up panel (tetap sama, responsif di dalamnya) */}
-                {selectedTile && buildingMap[`${selectedTile.x},${selectedTile.y}`] && (
+                {/* Slide-up panel untuk detail building */}
+                {selectedTile && buildingMap[`${selectedTile.x}_${selectedTile.y}`] && (
                     <Animated.View style={[styles.detailPanel, { transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) }], padding: screenWidth > 400 ? 24 : 16 }]}>
                         {(() => {
-                            const building = buildingMap[`${selectedTile.x},${selectedTile.y}`];
+                            const building = buildingMap[`${selectedTile.x}_${selectedTile.y}`];
                             const rawType = BUILDINGS.find(t => t.id === building.buildingTypeId);
                             if (!rawType) return null;
-                            const costScalar = 1 + (city.buildings.length * 0.05);
-                            const type = { ...rawType, costSilver: Math.floor(rawType.costSilver * costScalar), costGold: Math.floor(rawType.costGold * costScalar) };
-                            const upgradeCost = Math.floor(type.costSilver * 0.8 * building.level);
+                            // Hitung ulang scaling berdasarkan jumlah bangunan saat ini
+                            const totalBuildings = buildings.length;
+                            const scaledCostSilver = getScaledCost(rawType.costSilver, totalBuildings);
+                            // Upgrade cost menggunakan scaled cost (atau bisa pakai base? Di sini kita tetap pakai scaled)
+                            const upgradeCost = Math.floor(scaledCostSilver * 0.8 * building.level);
                             const levelMult = 1 + (building.level - 1) * 0.2;
-                            const currentHousing = Math.floor((type.housing || 0) * levelMult);
-                            const currentProduction = Math.floor((type.foodProduction || 0) * levelMult);
-                            const currentIncome = Math.floor((type.silverIncome || 0) * levelMult);
+                            const currentHousing = Math.floor((rawType.housing || 0) * levelMult);
+                            const currentProduction = Math.floor((rawType.foodProduction || 0) * levelMult);
+                            const currentIncome = Math.floor((rawType.silverIncome || 0) * levelMult);
                             const occupancy = getBuildingOccupancy(city.population, summary.totalHousing, currentHousing);
                             const occStatus = getOccupancyStatus(occupancy, currentHousing);
                             return (
@@ -446,10 +447,10 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                                         <View style={{ flexDirection: 'row', gap: 12 }}>
                                             <View style={{ width: 56, height: 56, backgroundColor: '#FFF', borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
-                                                <IconRenderer name={type.iconName} size={32} color="#1E293B" />
+                                                <IconRenderer name={rawType.iconName} size={32} color="#1E293B" />
                                             </View>
                                             <View>
-                                                <Text style={{ fontSize: 20, fontWeight: '900', color: '#14B8A6' }}>{type.name}</Text>
+                                                <Text style={{ fontSize: 20, fontWeight: '900', color: '#14B8A6' }}>{rawType.name}</Text>
                                                 <Text style={{ fontSize: 12, color: '#94A3B8' }}>Level {building.level} • {building.health}% Condition</Text>
                                             </View>
                                         </View>
@@ -458,7 +459,7 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                                         </TouchableOpacity>
                                     </View>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                                        {type.housing > 0 && (
+                                        {rawType.housing > 0 && (
                                             <View style={{ flex: 1, minWidth: 120, backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 24 }}>
                                                 <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: '#94A3B8' }}>Housing Capacity</Text>
                                                 <Text style={{ fontSize: 24, fontWeight: '900', color: '#14B8A6' }}>{occupancy} / {currentHousing}</Text>
@@ -467,13 +468,13 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                                                 </View>
                                             </View>
                                         )}
-                                        {type.foodProduction > 0 && (
+                                        {rawType.foodProduction > 0 && (
                                             <View style={{ flex: 1, minWidth: 120, backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 24 }}>
                                                 <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: '#94A3B8' }}>Food Production</Text>
                                                 <Text style={{ fontSize: 24, fontWeight: '900', color: '#FBBF24' }}>+{currentProduction}</Text>
                                             </View>
                                         )}
-                                        {type.silverIncome > 0 && (
+                                        {rawType.silverIncome > 0 && (
                                             <View style={{ flex: 1, minWidth: 120, backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 24 }}>
                                                 <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: '#94A3B8' }}>Tax Revenue</Text>
                                                 <Text style={{ fontSize: 24, fontWeight: '900', color: '#14B8A6' }}>+{currentIncome} S</Text>
@@ -482,14 +483,17 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
                                     </View>
                                     <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
                                         <TouchableOpacity
-                                            onPress={() => { onUpgrade(building.id, upgradeCost); closeDetail(); }}
+                                            onPress={() => {
+                                                onUpgrade(`${building.gridX}_${building.gridY}`,
+                                                    upgradeCost); closeDetail();
+                                            }}
                                             disabled={stats.silver < upgradeCost}
                                             style={{ flex: 1, backgroundColor: stats.silver >= upgradeCost ? '#14B8A6' : '#475569', paddingVertical: 14, borderRadius: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
                                         >
                                             <TrendingUp size={16} color="#0F172A" />
                                             <Text style={{ fontWeight: '900', color: '#0F172A' }}>Upgrade ({upgradeCost} S)</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => { onRemove(building.id); closeDetail(); }} style={{ backgroundColor: '#EF4444', paddingHorizontal: 20, borderRadius: 24, justifyContent: 'center' }}>
+                                        <TouchableOpacity onPress={() => { onRemove(`${building.gridX}_${building.gridY}`); closeDetail(); }} style={{ backgroundColor: '#EF4444', paddingHorizontal: 20, borderRadius: 24, justifyContent: 'center' }}>
                                             <Trash2 size={20} color="#FFF" />
                                         </TouchableOpacity>
                                     </View>
@@ -503,7 +507,6 @@ export default function CityTab({ city, stats, onDeploy, onUpgrade, onRemove, on
     );
 }
 
-// StyleSheet (tambahan statBadge)
 const styles = StyleSheet.create({
     dashboardCard: {
         backgroundColor: '#1E293B',

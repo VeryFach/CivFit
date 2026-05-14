@@ -1,6 +1,6 @@
 import { DISASTERS, ERA_MILESTONES } from '../constants';
 import { calculateCitySummary } from '../simulation/cityUtils';
-import { CityState, Era, Habit, UserStats } from '../types';
+import { CityState, Era, Habit, UserStats, PlacedBuilding } from '../types';
 
 export interface DayReport {
   date: string;
@@ -24,6 +24,7 @@ export interface DayReport {
 export const processEndDay = (
   stats: UserStats,
   city: CityState,
+  buildings: PlacedBuilding[],
   habits: Habit[],
   today: string
 ): {
@@ -54,7 +55,7 @@ export const processEndDay = (
     momentumChange = completionRate >= 0.8 ? 5 : -(unfinishedDaily.length * 10);
   }
 
-  const summary = calculateCitySummary(city);
+  const summary = calculateCitySummary(city, buildings);
   const taxes = Math.floor(summary.totalSilverIncome * (0.8 + (stats.momentum / 100) * 0.4));
   const healthChange = summary.healthImpact + (completionRate >= 0.8 ? 5 : -(unfinishedDaily.length * 4));
   const happinessChange = summary.happinessImpact + (completionRate >= 0.8 ? 10 : -(unfinishedDaily.length * 6));

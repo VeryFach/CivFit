@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    // =====================================================
+    // USERS
+    // =====================================================
+
+    match /users/{userId} {
+
+      // User hanya boleh akses data miliknya sendiri
+      allow read, write:
+        if request.auth != null
+        && request.auth.uid == userId;
+
+      // =====================================================
+      // BUILDINGS SUBCOLLECTION
+      // =====================================================
+
+      match /buildings/{buildingId} {
+
+        allow read, write:
+          if request.auth != null
+          && request.auth.uid == userId;
+      }
+
+      // =====================================================
+      // HABITS SUBCOLLECTION
+      // =====================================================
+
+      match /habits/{habitId} {
+
+        allow read, write:
+          if request.auth != null
+          && request.auth.uid == userId;
+      }
+
+      // =====================================================
+      // LOGS SUBCOLLECTION
+      // =====================================================
+
+      match /logs/{logId} {
+
+        allow read, write:
+          if request.auth != null
+          && request.auth.uid == userId;
+      }
+    }
+
+    // =====================================================
+    // LEADERBOARD
+    // =====================================================
+
+    match /leaderboard/{leaderboardUserId} {
+
+      // Semua user login boleh membaca leaderboard
+      allow read:
+        if request.auth != null;
+
+      // User hanya boleh update leaderboard miliknya sendiri
+      allow write:
+        if request.auth != null
+        && request.auth.uid == leaderboardUserId;
+    }
+  }
+}

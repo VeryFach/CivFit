@@ -1,6 +1,6 @@
 import { useCivStore } from '@/store';
 import { COLORS, THEME } from '@/theme';
-import { Coins, DollarSign, Heart } from 'lucide-react-native';
+import { Coins, DollarSign, Heart, Gem } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,7 +47,7 @@ export function Header() {
 
         {/* Silver */}
         <View style={[styles.currencyBadge, { backgroundColor: COLORS.purple }]}>
-          <DollarSign size={14} color={COLORS.white} />
+          <Gem size={14} color={COLORS.white} />
           <Text style={[styles.currencyText, { color: COLORS.white }]}>
             {stats.silver.toLocaleString()}
           </Text>
