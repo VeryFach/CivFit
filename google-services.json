@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "137900274417",
+    "project_id": "gen-lang-client-0259116762",
+    "storage_bucket": "gen-lang-client-0259116762.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:137900274417:android:f4c81ba4f95e5afce4ef50",
+        "android_client_info": {
+          "package_name": "com.anonymous.CivFit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "137900274417-8kesd9leu5hi8mpebpmjjdfls8c4hi7v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anonymous.CivFit",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "137900274417-dkfq24oo21fc678jnsaboqdth8tubl0o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCG8Ps6hnhzoJP8qsMRgWFF2p0VdKBg_s4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "137900274417-dkfq24oo21fc678jnsaboqdth8tubl0o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

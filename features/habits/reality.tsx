@@ -6,7 +6,7 @@ import {
     Layers,
     Plus,
     Trash2,
-    X,
+    X
 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -84,13 +84,13 @@ export default function RealitaTab({
 
     const momentumStatus =
         momentum >= 80 ? 'Unstoppable' :
-        momentum >= 50 ? 'Steady' :
-        momentum >= 20 ? 'Slow' : 'Stalled';
+            momentum >= 50 ? 'Steady' :
+                momentum >= 20 ? 'Slow' : 'Stalled';
 
     const momentumColor =
         momentum >= 80 ? '#FBBF24' :
-        momentum >= 50 ? '#14B8A6' :
-        momentum >= 20 ? '#8B5CF6' : '#EF4444';
+            momentum >= 50 ? '#14B8A6' :
+                momentum >= 20 ? '#8B5CF6' : '#EF4444';
 
     const handleAdd = () => {
         if (newHabit.trim()) {
@@ -148,6 +148,7 @@ export default function RealitaTab({
         const offset = firstDay === 0 ? 6 : firstDay - 1;
         const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         const habitLogs = logs.filter(log => log.type === 'habit');
+        const todayCompletionCount = habits.filter(h => h.completedDates.includes(habitDayKey)).length;
 
         const monthLogCounts = new Map<string, number>();
         habitLogs.forEach(log => {
@@ -156,8 +157,6 @@ export default function RealitaTab({
                 monthLogCounts.set(dateKey, (monthLogCounts.get(dateKey) ?? 0) + 1);
             }
         });
-
-        const maxLogCount = Math.max(0, ...Array.from(monthLogCounts.values()));
 
         const heatColors = [
             '#E2E8F0',
@@ -169,12 +168,9 @@ export default function RealitaTab({
 
         const getHeatLevel = (count: number) => {
             if (count <= 0) return 0;
-            if (maxLogCount <= 1) return 4;
-
-            const ratio = count / maxLogCount;
-            if (ratio < 0.25) return 1;
-            if (ratio < 0.5) return 2;
-            if (ratio < 0.75) return 3;
+            if (count === 1) return 1;
+            if (count === 2) return 2;
+            if (count === 3) return 3;
             return 4;
         };
 
@@ -209,7 +205,8 @@ export default function RealitaTab({
                         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const isToday = dateStr === todayDateKey;
                         const logCount = monthLogCounts.get(dateStr) ?? 0;
-                        const heatLevel = getHeatLevel(logCount);
+                        const combinedCount = logCount + (isToday ? todayCompletionCount : 0);
+                        const heatLevel = getHeatLevel(combinedCount);
 
                         return (
                             <TouchableOpacity
@@ -423,9 +420,20 @@ export default function RealitaTab({
                                         key={habit.id}
                                         style={[
                                             styles.habitCard,
-                                            isCompleted && styles.habitCardCompleted,
+
+                                            isCompleted && (
+                                                isDarkMode
+                                                    ? styles.habitCardCompletedDark
+                                                    : styles.habitCardCompleted
+                                            ),
+
                                             isEmergency && styles.habitCardEmergency,
-                                            !isCompleted && !isEmergency && styles.habitCardActive,
+
+                                            !isCompleted && !isEmergency && (
+                                                isDarkMode
+                                                    ? styles.habitCardActiveDark
+                                                    : styles.habitCardActive
+                                            ),
                                         ]}
                                         onPress={() => !isCompleted && onComplete(habit.id)}
                                         activeOpacity={0.8}
@@ -442,7 +450,12 @@ export default function RealitaTab({
                                         <View style={styles.habitInfo}>
                                             <View style={styles.habitTitleRow}>
                                                 <Text style={[
-                                                    styles.habitTitle,
+                                                        styles.habitTitle,
+
+    isDarkMode &&
+    !isCompleted &&
+    !isEmergency &&
+    styles.habitTitleDark,
                                                     isCompleted && styles.habitTitleCompleted,
                                                     isEmergency && styles.habitTitleEmergency,
                                                 ]}>
@@ -522,6 +535,7 @@ export default function RealitaTab({
                     <Animated.View
                         style={[
                             styles.bottomSheet,
+                            isDarkMode && styles.bottomSheetDark,
                             {
                                 transform: [{
                                     translateY: slideAnim.interpolate({
@@ -534,11 +548,22 @@ export default function RealitaTab({
                     >
                         <View style={styles.sheetHandle} />
                         <View style={styles.sheetHeader}>
-                            <Text style={styles.sheetTitle}>
+                            <Text
+                                style={[
+                                    styles.sheetTitle,
+                                    isDarkMode && styles.sheetTitleDark,
+                                ]}
+                            >
                                 {editingHabit ? 'Modifikasi Evolusi' : 'Inisiasi Evolusi'}
                             </Text>
-                            <TouchableOpacity onPress={closeBottomSheet} style={styles.sheetClose}>
-                                <X size={24} color="#1E293B" />
+                            <TouchableOpacity
+                                onPress={closeBottomSheet}
+                                style={[
+                                    styles.sheetClose,
+                                    isDarkMode && styles.sheetCloseDark,
+                                ]}
+                            >
+                                <X size={24} color={isDarkMode ? '#F8FAFC' : '#1E293B'} />
                             </TouchableOpacity>
                         </View>
 
@@ -551,10 +576,13 @@ export default function RealitaTab({
                             bounces={false}
                         >
                             <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>Judul Habit</Text>
+                                <Text style={[
+                                    styles.inputLabel,
+                                    isDarkMode && styles.inputLabelDark,
+                                ]}>Judul Habit</Text>
                                 <TextInput
                                     autoFocus
-                                    style={styles.input}
+                                    style={[styles.input, isDarkMode && styles.inputDark,]}
                                     placeholder="Apa rencana besarmu?"
                                     placeholderTextColor="#CBD5E1"
                                     value={newHabit}
@@ -571,7 +599,7 @@ export default function RealitaTab({
                                         <TouchableOpacity
                                             key={type}
                                             style={[
-                                                styles.typeButton,
+                                                styles.typeButton, isDarkMode && styles.typeButtonDark,
                                                 habitType === type && type === 'daily' && styles.typeButtonDailyActive,
                                                 habitType === type && type === 'weekly' && styles.typeButtonWeeklyActive,
                                                 habitType === type && type === 'monthly' && styles.typeButtonMonthlyActive,
@@ -579,7 +607,7 @@ export default function RealitaTab({
                                             onPress={() => setHabitType(type)}
                                         >
                                             <Text style={[
-                                                styles.typeButtonText,
+                                                styles.typeButtonText, isDarkMode && styles.typeButtonTextDark,
                                                 habitType === type && styles.typeButtonTextActive,
                                             ]}>
                                                 {type}
@@ -600,7 +628,7 @@ export default function RealitaTab({
                                 </TouchableOpacity>
 
                                 {editingHabit && (
-                                    <View style={styles.deleteSection}>
+                                    <View style={[styles.deleteSection, isDarkMode && styles.deleteSectionDark]}>
                                         {deletingHabitId === editingHabit.id ? (
                                             <View style={styles.deleteConfirmRow}>
                                                 <TouchableOpacity
@@ -1030,7 +1058,21 @@ const styles = StyleSheet.create({
     habitCardCompleted: {
         backgroundColor: '#F8FAFC',
         borderColor: '#E2E8F0',
-        opacity: 0.6,
+        shadowColor: '#14B8A6',
+        shadowOpacity: 0.15,
+        elevation: 3,
+    },
+    habitCardCompletedDark: {
+        backgroundColor: '#0F2E2B',
+        borderColor: '#14B8A6',
+        borderLeftWidth: 5,
+
+        shadowColor: '#14B8A6',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+
+        elevation: 4,
     },
     habitCardEmergency: {
         backgroundColor: 'rgba(239,68,68,0.05)',
@@ -1046,6 +1088,17 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.1,
+        elevation: 4,
+    },
+    habitCardActiveDark: {
+        backgroundColor: '#171223',
+        borderColor: '#14b86e',
+
+        shadowColor: '#000',
+        shadowOffset: { width: 4, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+
         elevation: 4,
     },
     habitIcon: {
@@ -1089,6 +1142,9 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         color: '#1E293B',
     },
+    habitTitleDark: {
+    color: '#F8FAFC',
+},
     habitTitleCompleted: {
         textDecorationLine: 'line-through',
         color: '#94A3B8',
@@ -1228,6 +1284,10 @@ const styles = StyleSheet.create({
         // Batasi tinggi maksimum agar tidak memenuhi layar
         maxHeight: screenHeight * 0.85,
     },
+    bottomSheetDark: {
+        backgroundColor: '#0F172A',
+        borderColor: '#334155',
+    },
     sheetHandle: {
         width: 48,
         height: 6,
@@ -1251,12 +1311,19 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         color: '#1E293B',
     },
+    sheetTitleDark: {
+        color: '#F8FAFC',
+    },
     sheetClose: {
         padding: 8,
         borderRadius: 20,
         backgroundColor: '#F8FAFC',
         borderWidth: 1,
         borderColor: '#CBD5E1',
+    },
+    sheetCloseDark: {
+        backgroundColor: '#1E293B',
+        borderColor: '#334155',
     },
     sheetScroll: {
         flexGrow: 0,
@@ -1277,6 +1344,9 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         paddingHorizontal: 4,
     },
+    inputLabelDark: {
+        color: '#94A3B8',
+    },
     input: {
         fontSize: 24,
         fontWeight: '900',
@@ -1285,6 +1355,10 @@ const styles = StyleSheet.create({
         borderBottomColor: '#14B8A6',
         paddingVertical: 12,
         color: '#1E293B',
+    },
+    inputDark: {
+        color: '#F8FAFC',
+        borderBottomColor: '#14B8A6',
     },
     typeGroup: {
         marginBottom: 32,
@@ -1301,6 +1375,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#E2E8F0',
         backgroundColor: '#FFFFFF',
+    },
+    typeButtonDark: {
+        backgroundColor: '#1E293B',
+        borderColor: '#334155',
     },
     typeButtonDailyActive: {
         backgroundColor: '#14B8A6',
@@ -1329,6 +1407,9 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textTransform: 'uppercase',
         color: '#94A3B8',
+    },
+    typeButtonTextDark: {
+        color: '#F8FAFC',
     },
     typeButtonTextActive: {
         color: '#1E293B',
@@ -1361,6 +1442,9 @@ const styles = StyleSheet.create({
         paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: '#E2E8F0',
+    },
+    deleteSectionDark: {
+        borderTopColor: '#334155',
     },
     deleteConfirmRow: {
         flexDirection: 'row',

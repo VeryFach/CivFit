@@ -18,6 +18,8 @@ import {
     Trash2,
     TrendingUp,
     UsersRound,
+    Heart,
+    BadgeAlert,
     X,
 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -305,15 +307,18 @@ export default function CityTab({
                                 <Text style={[styles.eraSub, { color: palette.accentTeal }]}>Era Progression</Text>
                             </TouchableOpacity>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 8 }}>
-                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border }]}>
+                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                                    <Heart size={14} color={healthStatus.color} />
                                     <Text style={[styles.eraSub, { color: healthStatus.color }]}>Health: {city.health}%</Text>
                                 </View>
-                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border }]}>
+                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border, flexDirection: 'row', alignItems: 'center', gap: 6}]}>
+                                    <UsersRound size={14} color={palette.accentTeal} />
                                     <Text style={[styles.eraSub, { color: palette.accentTeal }]}>Pop: {city.population}</Text>
                                 </View>
                                 {(city.populationSick || 0) > 0 && (
-                                    <View style={[styles.statusBadge, { backgroundColor: palette.accentRed, borderColor: '#FCA5A5' }]}>
-                                        <Text style={{ fontSize: smallCapsFont, fontWeight: '800', color: '#FFF' }}>😷 Sick: {city.populationSick}</Text>
+                                    <View style={[styles.statusBadge, { backgroundColor: palette.accentRed, borderColor: '#FCA5A5', flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                                        <BadgeAlert size={14} color="#FFF" />
+                                        <Text style={{ fontSize: smallCapsFont, fontWeight: '800', color: '#FFF' }}> Sick: {city.populationSick}</Text>
                                     </View>
                                 )}
                             </View>
