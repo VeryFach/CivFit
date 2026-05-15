@@ -87,10 +87,12 @@ interface CivState {
     city: CityState;
     logs: ActivityLog[];
     buildings: PlacedBuilding[];
+    pendingLevelUp: { level: number; levelUpCount: number } | null;
 
     initialize: () => void;
     setStats: (stats: UserStats | ((prev: UserStats) => UserStats)) => void;
     setCity: (city: CityState | ((prev: CityState) => CityState)) => void;
+    clearPendingLevelUp: () => void;
     addHabit: (title: string, type: HabitType) => Promise<void>;
     completeHabit: (id: string) => Promise<void>;
     updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
@@ -143,6 +145,7 @@ export const useCivStore = create<CivState>((set, get) => ({
     city: INITIAL_CITY,
     logs: [],
     buildings: [],
+    pendingLevelUp: null,
 
     initialize: async () => {
         if (unsubscribeAuthListener) return;
@@ -153,6 +156,11 @@ export const useCivStore = create<CivState>((set, get) => ({
             // Always clear previous user listeners first to avoid stale reads after logout/switch.
             unsubscribeUserScopedListeners?.();
             unsubscribeUserScopedListeners = null;
+
+            const previousUser = get().currentUser;
+            if (previousUser?.uid !== user?.uid) {
+                set({ pendingLevelUp: null });
+            }
 
             set({ currentUser: user });
 
@@ -264,7 +272,7 @@ export const useCivStore = create<CivState>((set, get) => ({
                     unsubs.forEach((unsubscribe) => unsubscribe());
                 };
             } else {
-                set({ loading: false, habits: [], logs: [], buildings: [], stats: INITIAL_STATS, city: INITIAL_CITY });
+                set({ loading: false, habits: [], logs: [], buildings: [], stats: INITIAL_STATS, city: INITIAL_CITY, pendingLevelUp: null });
             }
         });
     },
@@ -289,6 +297,10 @@ export const useCivStore = create<CivState>((set, get) => ({
             setDoc(doc(db, 'users', currentUser.uid), { city: newCity, updatedAt: serverTimestamp() }, { merge: true })
                 .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${currentUser.uid}`));
         }
+    },
+
+    clearPendingLevelUp: () => {
+        set({ pendingLevelUp: null });
     },
 
     addLog: async (type, message, change, unit) => {
@@ -340,7 +352,7 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     completeHabit: async (id) => {
-        const { stats, habits, currentUser, addLog } = get();
+        const { stats, habits, currentUser, addLog, pendingLevelUp } = get();
         const today = getHabitDayKey(stats.dayCount);
         const h = habits.find(habit => habit.id === id);
         if (!h || h.completedDates.includes(today)) return;
@@ -362,12 +374,15 @@ export const useCivStore = create<CivState>((set, get) => ({
             newMaxExp = Math.floor(newMaxExp * 1.2);
         }
 
+        const levelUpCount = Math.max(0, newLevel - stats.level);
+
         const updatedStats = {
             ...stats,
             gold: stats.gold + Math.floor(h.goldReward * finalMultiplier),
             exp: newExp,
             level: newLevel,
             maxExp: newMaxExp,
+            lastCelebratedLevel: levelUpCount > 0 ? newLevel : stats.lastCelebratedLevel,
             momentum: Math.min(100, stats.momentum + 2)
         };
 
@@ -379,7 +394,16 @@ export const useCivStore = create<CivState>((set, get) => ({
 
         if (currentUser) {
             // Optimistic local update so level-up UI reacts immediately, without waiting for Firestore snapshot latency.
-            set({ stats: updatedStats, habits: habits.map(habit => habit.id === id ? updatedHabit : habit) });
+            set({
+                stats: updatedStats,
+                habits: habits.map(habit => habit.id === id ? updatedHabit : habit),
+                pendingLevelUp: levelUpCount > 0
+                    ? {
+                        level: newLevel,
+                        levelUpCount,
+                    }
+                    : pendingLevelUp,
+            });
 
             const batch = writeBatch(db);
             batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, updatedAt: serverTimestamp() }, { merge: true });
@@ -391,7 +415,16 @@ export const useCivStore = create<CivState>((set, get) => ({
             });
             await batch.commit();
         } else {
-            set({ stats: updatedStats, habits: habits.map(habit => habit.id === id ? updatedHabit : habit) });
+            set({
+                stats: updatedStats,
+                habits: habits.map(habit => habit.id === id ? updatedHabit : habit),
+                pendingLevelUp: levelUpCount > 0
+                    ? {
+                        level: newLevel,
+                        levelUpCount,
+                    }
+                    : pendingLevelUp,
+            });
         }
 
         addLog('habit', `Completed: ${h.title}`, h.goldReward, 'gold');

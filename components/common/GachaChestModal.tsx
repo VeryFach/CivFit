@@ -80,10 +80,11 @@ function Particle({ delay, color, index }: { delay: number; color: string; index
 function RingPulse({ color, delay }: { color: string; delay: number }) {
     const scale = useRef(new Animated.Value(0.5)).current;
     const opacity = useRef(new Animated.Value(0)).current;
+    const loopRef = useRef<Animated.CompositeAnimation | null>(null);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            Animated.loop(
+            loopRef.current = Animated.loop(
                 Animated.parallel([
                     Animated.timing(scale, {
                         toValue: 2.5,
@@ -96,9 +97,14 @@ function RingPulse({ color, delay }: { color: string; delay: number }) {
                         Animated.timing(opacity, { toValue: 0, duration: 1100, useNativeDriver: true }),
                     ]),
                 ])
-            ).start();
+            );
+            loopRef.current.start();
         }, delay);
-        return () => clearTimeout(timeout);
+        return () => {
+            clearTimeout(timeout);
+            loopRef.current?.stop();
+            loopRef.current = null;
+        };
     }, []);
 
     return (
@@ -126,168 +132,322 @@ export default function GachaChestModal({
     const GACHA_COST_GOLD = 100;
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const shakeAnim = useRef(new Animated.Value(0)).current;
-    const openAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0)).current;
     const rewardSlide = useRef(new Animated.Value(80)).current;
     const rewardOpacity = useRef(new Animated.Value(0)).current;
     const lidAnim = useRef(new Animated.Value(0)).current;
     const lidSlide = useRef(new Animated.Value(0)).current;
-    const rotateAnim = useRef(new Animated.Value(0)).current;
     const bgPulse = useRef(new Animated.Value(0)).current;
     const shimmerAnim = useRef(new Animated.Value(0)).current;
     const bounceAnim = useRef(new Animated.Value(0)).current;
     const cardScale = useRef(new Animated.Value(0.85)).current;
+    const shimmerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+    const bounceLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+    const bgPulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+    const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const rewardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [showRewardCard, setShowRewardCard] = useState(false);
     const [isChestOpen, setIsChestOpen] = useState(false);
     const [showParticles, setShowParticles] = useState(false);
     const [showRings, setShowRings] = useState(false);
+    const [activeRewardColor, setActiveRewardColor] = useState('#FBBF24');
+
+    const stopRunningAnimations = () => {
+        shimmerLoopRef.current?.stop();
+        bounceLoopRef.current?.stop();
+        bgPulseLoopRef.current?.stop();
+        shimmerLoopRef.current = null;
+        bounceLoopRef.current = null;
+        bgPulseLoopRef.current = null;
+    };
+
+    const clearScheduledTimers = () => {
+        if (entranceTimeoutRef.current) {
+            clearTimeout(entranceTimeoutRef.current);
+            entranceTimeoutRef.current = null;
+        }
+        if (rewardTimeoutRef.current) {
+            clearTimeout(rewardTimeoutRef.current);
+            rewardTimeoutRef.current = null;
+        }
+    };
 
     useEffect(() => {
-        if (visible) {
+        clearScheduledTimers();
+        stopRunningAnimations();
+
+        if (!visible) {
             setShowRewardCard(false);
             setIsChestOpen(false);
             setShowParticles(false);
             setShowRings(false);
-
-            // Reset
-            [openAnim, glowAnim, lidAnim, bgPulse, shimmerAnim].forEach(a => a.setValue(0));
-            [rewardSlide].forEach(a => a.setValue(80));
+            setActiveRewardColor('#FBBF24');
+            scaleAnim.setValue(0);
+            shakeAnim.setValue(0);
+            glowAnim.setValue(0);
+            rewardSlide.setValue(80);
             rewardOpacity.setValue(0);
+            lidAnim.setValue(0);
             lidSlide.setValue(0);
-            rotateAnim.setValue(0);
+            bgPulse.setValue(0);
+            shimmerAnim.setValue(0);
             bounceAnim.setValue(0);
             cardScale.setValue(0.85);
+            return;
+        }
 
-            // 1. Entrance pop
-            Animated.spring(scaleAnim, {
+        setShowRewardCard(false);
+        setIsChestOpen(false);
+        setShowParticles(false);
+        setShowRings(false);
+        setActiveRewardColor('#FBBF24');
+
+        scaleAnim.setValue(0);
+        shakeAnim.setValue(0);
+        glowAnim.setValue(0);
+        rewardSlide.setValue(80);
+        rewardOpacity.setValue(0);
+        lidAnim.setValue(0);
+        lidSlide.setValue(0);
+        bgPulse.setValue(0);
+        shimmerAnim.setValue(0);
+        bounceAnim.setValue(0);
+        cardScale.setValue(0.85);
+
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 5,
+            tension: 80,
+            useNativeDriver: true,
+        }).start();
+
+        shimmerLoopRef.current = Animated.loop(
+            Animated.timing(shimmerAnim, {
                 toValue: 1,
-                friction: 5,
-                tension: 80,
+                duration: 1500,
+                easing: Easing.inOut(Easing.sin),
                 useNativeDriver: true,
-            }).start();
+            })
+        );
+        shimmerLoopRef.current.start();
 
-            // 2. Shimmer loop on chest
-            Animated.loop(
-                Animated.timing(shimmerAnim, {
-                    toValue: 1,
-                    duration: 1500,
+        bounceLoopRef.current = Animated.loop(
+            Animated.sequence([
+                Animated.timing(bounceAnim, {
+                    toValue: -8,
+                    duration: 900,
                     easing: Easing.inOut(Easing.sin),
                     useNativeDriver: true,
-                })
-            ).start();
+                }),
+                Animated.timing(bounceAnim, {
+                    toValue: 0,
+                    duration: 900,
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        bounceLoopRef.current.start();
 
-            // 3. Idle float
-            Animated.loop(
-                Animated.sequence([
-                    Animated.timing(bounceAnim, {
-                        toValue: -8,
-                        duration: 900,
-                        easing: Easing.inOut(Easing.sin),
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(bounceAnim, {
-                        toValue: 0,
-                        duration: 900,
-                        easing: Easing.inOut(Easing.sin),
-                        useNativeDriver: true,
-                    }),
-                ])
-            ).start();
+        bgPulseLoopRef.current = Animated.loop(
+            Animated.sequence([
+                Animated.timing(bgPulse, {
+                    toValue: 1,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(bgPulse, {
+                    toValue: 0,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        bgPulseLoopRef.current.start();
 
-            // 4. BG pulse loop
-            Animated.loop(
-                Animated.sequence([
-                    Animated.timing(bgPulse, {
+        entranceTimeoutRef.current = setTimeout(() => {
+            Animated.sequence([
+                Animated.timing(shakeAnim, { toValue: 14, duration: 60, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: -14, duration: 60, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: 6, duration: 60, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+            ]).start(() => {
+                setShowRings(true);
+                Animated.parallel([
+                    Animated.timing(lidAnim, {
                         toValue: 1,
-                        duration: 1200,
-                        easing: Easing.inOut(Easing.sin),
+                        duration: 300,
+                        easing: Easing.out(Easing.back(1.2)),
                         useNativeDriver: true,
                     }),
-                    Animated.timing(bgPulse, {
-                        toValue: 0,
-                        duration: 1200,
-                        easing: Easing.inOut(Easing.sin),
+                    Animated.timing(lidSlide, {
+                        toValue: -90,
+                        duration: 400,
+                        easing: Easing.out(Easing.cubic),
                         useNativeDriver: true,
                     }),
-                ])
-            ).start();
-
-            // 5. After short delay → shake
-            setTimeout(() => {
-                Animated.sequence([
-                    Animated.timing(shakeAnim, { toValue: 14, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: -14, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: 6, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+                    Animated.timing(glowAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
                 ]).start(() => {
-                    setShowRings(true);
-                    // 6. Lid flies off
-                    Animated.parallel([
-                        Animated.timing(lidAnim, {
-                            toValue: 1,
-                            duration: 300,
-                            easing: Easing.out(Easing.back(1.2)),
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(lidSlide, {
-                            toValue: -90,
-                            duration: 400,
-                            easing: Easing.out(Easing.cubic),
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(glowAnim, {
-                            toValue: 1,
-                            duration: 400,
-                            useNativeDriver: true,
-                        }),
-                    ]).start(() => {
-                        setIsChestOpen(true);
-                        setShowParticles(true);
-
-                        if (reward) {
-                            setTimeout(() => {
-                                setShowRewardCard(true);
-                                Animated.parallel([
-                                    Animated.spring(rewardSlide, {
-                                        toValue: 0,
-                                        friction: 7,
-                                        tension: 60,
-                                        useNativeDriver: true,
-                                    }),
-                                    Animated.timing(rewardOpacity, {
-                                        toValue: 1,
-                                        duration: 350,
-                                        useNativeDriver: true,
-                                    }),
-                                    Animated.spring(cardScale, {
-                                        toValue: 1,
-                                        friction: 6,
-                                        tension: 70,
-                                        useNativeDriver: true,
-                                    }),
-                                ]).start();
-                            }, 350);
-                        }
-                    });
+                    setIsChestOpen(true);
+                    setShowParticles(true);
                 });
-            }, 1000);
-        } else {
-            scaleAnim.setValue(0);
+            });
+        }, 1000);
+
+        return () => {
+            clearScheduledTimers();
+            stopRunningAnimations();
+        };
+    }, [visible]);
+
+    useEffect(() => {
+        if (!visible || !reward || !isChestOpen) {
+            return;
         }
-    }, [visible, reward]);
+
+        if (rewardTimeoutRef.current) {
+            clearTimeout(rewardTimeoutRef.current);
+            rewardTimeoutRef.current = null;
+        }
+
+        rewardTimeoutRef.current = setTimeout(() => {
+            setActiveRewardColor(reward.color);
+            setShowRewardCard(true);
+            Animated.parallel([
+                Animated.spring(rewardSlide, {
+                    toValue: 0,
+                    friction: 7,
+                    tension: 60,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(rewardOpacity, {
+                    toValue: 1,
+                    duration: 350,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(cardScale, {
+                    toValue: 1,
+                    friction: 6,
+                    tension: 70,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }, 350);
+
+        return () => {
+            if (rewardTimeoutRef.current) {
+                clearTimeout(rewardTimeoutRef.current);
+                rewardTimeoutRef.current = null;
+            }
+        };
+    }, [visible, reward, isChestOpen]);
 
     const isLoading = isOpening && !reward;
-    const rewardColor = reward?.color || '#FBBF24';
+    const rewardColor = activeRewardColor;
     const isGoldReward = reward?.type === 'gold';
-    const netGoldChange = isGoldReward && reward ? reward.amount - GACHA_COST_GOLD : null;
+    const netGoldChange = reward ? (reward.type === 'gold' ? reward.amount - GACHA_COST_GOLD : null) : null;
 
-    const chestRotate = rotateAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg'],
-    });
+    let rewardCard: React.ReactNode = null;
+    if (showRewardCard && reward) {
+        const activeReward = reward;
+
+        rewardCard = (
+            <Animated.View
+                style={[
+                    styles.rewardCardWrapper,
+                    {
+                        transform: [
+                            { translateY: rewardSlide },
+                            { scale: cardScale },
+                        ],
+                        opacity: rewardOpacity,
+                    },
+                ]}
+            >
+                <View style={[styles.cardAccentBar, { backgroundColor: activeReward.color }]} />
+                <View style={styles.cardGlint1} />
+                <View style={styles.cardGlint2} />
+
+                <View style={styles.iconOuter}>
+                    <View
+                        style={[
+                            styles.iconRing,
+                            { borderColor: activeReward.color + '60' },
+                        ]}
+                    />
+                    <View
+                        style={[
+                            styles.iconInner,
+                            { backgroundColor: activeReward.color + '18' },
+                        ]}
+                    >
+                        {activeReward.icon}
+                    </View>
+                </View>
+
+                <View style={[styles.rewardChip, { backgroundColor: activeReward.color + '20', borderColor: activeReward.color + '50' }]}>
+                    <Sparkles size={12} color={activeReward.color} />
+                    <Text style={[styles.rewardChipText, { color: activeReward.color }]}>
+                        HADIAH DITEMUKAN
+                    </Text>
+                    <Sparkles size={12} color={activeReward.color} />
+                </View>
+
+                <Text style={styles.rewardTitle}>{activeReward.name}</Text>
+
+                <View style={styles.amountRow}>
+                    <Text style={styles.plusSign}>+</Text>
+                    <Text style={[styles.rewardAmount, { color: activeReward.color }]}>
+                        {activeReward.amount.toLocaleString()}
+                    </Text>
+                </View>
+
+                {isGoldReward && netGoldChange !== null && (
+                    <View style={styles.netInfoBox}>
+                        <View style={styles.netInfoRow}>
+                            <Text style={styles.netInfoLabel}>Biaya gacha</Text>
+                            <Text style={styles.netInfoNegative}>- {GACHA_COST_GOLD} Gold</Text>
+                        </View>
+                        <View style={styles.netInfoRow}>
+                            <Text style={styles.netInfoLabel}>Perubahan net</Text>
+                            <Text style={[styles.netInfoNet, { color: netGoldChange >= 0 ? '#16A34A' : '#DC2626' }]}>
+                                {netGoldChange >= 0 ? '+ ' : '- '}
+                                {Math.abs(netGoldChange).toLocaleString()} Gold
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.divider}>
+                    <View style={[styles.dividerLine, { backgroundColor: activeReward.color + '40' }]} />
+                    <View style={[styles.dividerDot, { backgroundColor: activeReward.color }]} />
+                    <View style={[styles.dividerLine, { backgroundColor: activeReward.color + '40' }]} />
+                </View>
+
+                <TouchableOpacity
+                    style={[styles.collectButton, { backgroundColor: activeReward.color }]}
+                    onPress={onClose}
+                    activeOpacity={0.85}
+                >
+                    <View style={styles.collectButtonInner}>
+                        <Zap size={16} color="#1E293B" strokeWidth={2.5} />
+                        <Text style={styles.collectButtonText}>Kumpulkan</Text>
+                        <Zap size={16} color="#1E293B" strokeWidth={2.5} />
+                    </View>
+                    <View style={styles.buttonHighlight} />
+                </TouchableOpacity>
+            </Animated.View>
+        );
+    }
 
     const glowScale = glowAnim.interpolate({
         inputRange: [0, 1],
@@ -327,7 +487,6 @@ export default function GachaChestModal({
     return (
         <Modal transparent animationType="none" visible={visible} onRequestClose={onClose}>
             <View style={styles.overlay}>
-                {/* Radial background glow */}
                 <Animated.View
                     style={[
                         styles.bgGlow,
@@ -339,7 +498,6 @@ export default function GachaChestModal({
                     ]}
                 />
 
-                {/* Decorative grid lines */}
                 <View style={styles.gridContainer} pointerEvents="none">
                     {[...Array(6)].map((_, i) => (
                         <View
@@ -349,13 +507,11 @@ export default function GachaChestModal({
                     ))}
                 </View>
 
-                {/* Corner decorations */}
                 <View style={[styles.cornerDeco, styles.topLeft]} />
                 <View style={[styles.cornerDeco, styles.topRight]} />
                 <View style={[styles.cornerDeco, styles.bottomLeft]} />
                 <View style={[styles.cornerDeco, styles.bottomRight]} />
 
-                {/* Main chest scene */}
                 <Animated.View
                     style={[
                         styles.sceneContainer,
@@ -368,7 +524,6 @@ export default function GachaChestModal({
                         },
                     ]}
                 >
-                    {/* Pulsing rings */}
                     {showRings && (
                         <>
                             <RingPulse color={rewardColor} delay={0} />
@@ -377,7 +532,6 @@ export default function GachaChestModal({
                         </>
                     )}
 
-                    {/* Radial burst glow */}
                     <Animated.View
                         style={[
                             styles.burstGlow,
@@ -389,7 +543,6 @@ export default function GachaChestModal({
                         ]}
                     />
 
-                    {/* Shadow under chest */}
                     <Animated.View
                         style={[
                             styles.chestShadow,
@@ -410,9 +563,7 @@ export default function GachaChestModal({
                         ]}
                     />
 
-                    {/* THE CHEST */}
                     <View style={styles.chestWrapper}>
-                        {/* Chest Lid (flies off) */}
                         <Animated.View
                             style={[
                                 styles.chestLid,
@@ -425,15 +576,11 @@ export default function GachaChestModal({
                                 },
                             ]}
                         >
-                            {/* Lid top face */}
                             <View style={styles.lidTopFace}>
-                                {/* Metal band */}
                                 <View style={styles.lidBand} />
-                                {/* Lock */}
                                 <View style={styles.lidLock}>
                                     <View style={styles.lockCircle} />
                                 </View>
-                                {/* Shimmer */}
                                 <Animated.View
                                     style={[
                                         styles.shimmer,
@@ -441,26 +588,18 @@ export default function GachaChestModal({
                                     ]}
                                 />
                             </View>
-                            {/* Lid front bevel */}
                             <View style={styles.lidFrontBevel} />
-                            {/* Lid side bevel */}
                             <View style={styles.lidSideBevel} />
                         </Animated.View>
 
-                        {/* Chest Body */}
                         <View style={styles.chestBody}>
-                            {/* Top face of body */}
                             <View style={styles.bodyTopFace} />
-                            {/* Front face */}
                             <View style={styles.bodyFrontFace}>
-                                {/* Metal band across middle */}
                                 <View style={styles.bodyBand} />
-                                {/* Corner bolts */}
                                 <View style={[styles.bolt, { top: 8, left: 8 }]} />
                                 <View style={[styles.bolt, { top: 8, right: 8 }]} />
                                 <View style={[styles.bolt, { bottom: 8, left: 8 }]} />
                                 <View style={[styles.bolt, { bottom: 8, right: 8 }]} />
-                                {/* Inner content glow when open */}
                                 {isChestOpen && (
                                     <Animated.View
                                         style={[
@@ -472,7 +611,6 @@ export default function GachaChestModal({
                                         ]}
                                     />
                                 )}
-                                {/* Icon */}
                                 <View style={styles.chestIconContainer}>
                                     {!isChestOpen ? (
                                         <Gift size={36} color="#FDE047" strokeWidth={2} />
@@ -493,7 +631,6 @@ export default function GachaChestModal({
                                         </Animated.View>
                                     )}
                                 </View>
-                                {/* Shimmer sweep */}
                                 <Animated.View
                                     style={[
                                         styles.shimmer,
@@ -501,14 +638,11 @@ export default function GachaChestModal({
                                     ]}
                                 />
                             </View>
-                            {/* Side face (3D right side) */}
                             <View style={styles.bodySideFace} />
-                            {/* Bottom face */}
                             <View style={styles.bodyBottomFace} />
                         </View>
                     </View>
 
-                    {/* Particles */}
                     {showParticles && (
                         <View style={styles.particleContainer} pointerEvents="none">
                             {[...Array(16)].map((_, i) => (
@@ -523,7 +657,6 @@ export default function GachaChestModal({
                     )}
                 </Animated.View>
 
-                {/* Loading */}
                 {isLoading && (
                     <View style={styles.loadingContainer}>
                         <Zap size={14} color="#FDE047" />
@@ -531,103 +664,7 @@ export default function GachaChestModal({
                     </View>
                 )}
 
-                {/* Reward Card */}
-                {showRewardCard && reward && (
-                    <Animated.View
-                        style={[
-                            styles.rewardCardWrapper,
-                            {
-                                transform: [
-                                    { translateY: rewardSlide },
-                                    { scale: cardScale },
-                                ],
-                                opacity: rewardOpacity,
-                            },
-                        ]}
-                    >
-                        {/* Card top accent bar */}
-                        <View style={[styles.cardAccentBar, { backgroundColor: reward.color }]} />
-
-                        {/* Glint lines decoration */}
-                        <View style={styles.cardGlint1} />
-                        <View style={styles.cardGlint2} />
-
-                        {/* Icon badge */}
-                        <View style={styles.iconOuter}>
-                            <View
-                                style={[
-                                    styles.iconRing,
-                                    { borderColor: reward.color + '60' },
-                                ]}
-                            />
-                            <View
-                                style={[
-                                    styles.iconInner,
-                                    { backgroundColor: reward.color + '18' },
-                                ]}
-                            >
-                                {reward.icon}
-                            </View>
-                        </View>
-
-                        {/* Reward label chip */}
-                        <View style={[styles.rewardChip, { backgroundColor: reward.color + '20', borderColor: reward.color + '50' }]}>
-                            <Sparkles size={12} color={reward.color} />
-                            <Text style={[styles.rewardChipText, { color: reward.color }]}>
-                              HADIAH DITEMUKAN
-                            </Text>
-                            <Sparkles size={12} color={reward.color} />
-                        </View>
-
-                        <Text style={styles.rewardTitle}>{reward.name}</Text>
-
-                        {/* Amount display */}
-                        <View style={styles.amountRow}>
-                            <Text style={styles.plusSign}>+</Text>
-                            <Text style={[styles.rewardAmount, { color: reward.color }]}>
-                                {reward.amount.toLocaleString()}
-                            </Text>
-                        </View>
-
-                        {isGoldReward && netGoldChange !== null && (
-                            <View style={styles.netInfoBox}>
-                                <View style={styles.netInfoRow}>
-                                    <Text style={styles.netInfoLabel}>Biaya gacha</Text>
-                                    <Text style={styles.netInfoNegative}>- {GACHA_COST_GOLD} Gold</Text>
-                                </View>
-                                <View style={styles.netInfoRow}>
-                                    <Text style={styles.netInfoLabel}>Perubahan net</Text>
-                                    <Text style={[styles.netInfoNet, { color: netGoldChange >= 0 ? '#16A34A' : '#DC2626' }]}>
-                                        {netGoldChange >= 0 ? '+ ' : '- '}
-                                        {Math.abs(netGoldChange).toLocaleString()} Gold
-                                    </Text>
-                                </View>
-                            </View>
-                        )}
-
-                        {/* Divider */}
-                        <View style={styles.divider}>
-                            <View style={[styles.dividerLine, { backgroundColor: reward.color + '40' }]} />
-                            <View style={[styles.dividerDot, { backgroundColor: reward.color }]} />
-                            <View style={[styles.dividerLine, { backgroundColor: reward.color + '40' }]} />
-                        </View>
-
-                        {/* Collect button */}
-                        <TouchableOpacity
-                            style={[styles.collectButton, { backgroundColor: reward.color }]}
-                            onPress={onClose}
-                            activeOpacity={0.85}
-                        >
-                            <View style={styles.collectButtonInner}>
-                                <Zap size={16} color="#1E293B" strokeWidth={2.5} />
-                                <Text style={styles.collectButtonText}>Kumpulkan</Text>
-                                <Zap size={16} color="#1E293B" strokeWidth={2.5} />
-                            </View>
-                            {/* Button highlight */}
-                            <View style={styles.buttonHighlight} />
-                        </TouchableOpacity>
-                    </Animated.View>
-                )}
+                {rewardCard}
             </View>
         </Modal>
     );

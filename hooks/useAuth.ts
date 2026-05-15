@@ -14,7 +14,7 @@ import {
 
 import { useCivStore } from '@/store';
 
-import firebaseConfig from '@/firebase-applet-config.json';
+// import firebaseConfig from '@/firebase-applet-config.json';
 
 
 // ======================================================
@@ -37,16 +37,16 @@ const webClientProjectNumber =
     WEB_CLIENT_ID
         .split('-')[0];
 
-if (
-    WEB_CLIENT_ID !== 'ISI_WEB_CLIENT_ID' &&
-    webClientProjectNumber !== firebaseConfig.messagingSenderId
-) {
-    console.warn(
-        '[Auth] Google Web Client ID does not match Firebase project.\n' +
-        `Expected project number: ${firebaseConfig.messagingSenderId}\n` +
-        `Received project number: ${webClientProjectNumber}`
-    );
-}
+// if (
+//     WEB_CLIENT_ID !== 'ISI_WEB_CLIENT_ID' &&
+//     webClientProjectNumber !== firebaseConfig.messagingSenderId
+// ) {
+//     console.warn(
+//         '[Auth] Google Web Client ID does not match Firebase project.\n' +
+//         `Expected project number: ${firebaseConfig.messagingSenderId}\n` +
+//         `Received project number: ${webClientProjectNumber}`
+//     );
+// }
 
 GoogleSignin.configure({
 

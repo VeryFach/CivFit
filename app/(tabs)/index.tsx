@@ -4,7 +4,7 @@ import { DayReport } from '@/core/progression/engine';
 import Reality from '@/features/habits/reality';
 import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
 import { useCivStore } from '@/store';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
 export default function RealitaTab() {
@@ -16,30 +16,11 @@ export default function RealitaTab() {
     const updateHabit = useCivStore((state) => state.updateHabit);
     const deleteHabit = useCivStore((state) => state.deleteHabit);
     const endDay = useCivStore((state) => state.endDay);
+    const pendingLevelUp = useCivStore((state) => state.pendingLevelUp);
+    const clearPendingLevelUp = useCivStore((state) => state.clearPendingLevelUp);
 
     const [sleepState, setSleepState] = useState<'idle' | 'animating' | 'summary'>('idle');
     const [report, setReport] = useState<DayReport | null>(null);
-    const [levelUpCelebration, setLevelUpCelebration] = useState<{ level: number; levelUpCount: number } | null>(null);
-
-    const hasInitializedLevelRef = useRef(false);
-    const lastSeenLevelRef = useRef(stats.level);
-
-    useEffect(() => {
-        if (!hasInitializedLevelRef.current) {
-            hasInitializedLevelRef.current = true;
-            lastSeenLevelRef.current = stats.level;
-            return;
-        }
-
-        if (stats.level > lastSeenLevelRef.current) {
-            setLevelUpCelebration({
-                level: stats.level,
-                levelUpCount: stats.level - lastSeenLevelRef.current,
-            });
-        }
-
-        lastSeenLevelRef.current = stats.level;
-    }, [stats.level]);
 
     const handleEndDay = async () => {
         const result = await endDay();
@@ -54,7 +35,7 @@ export default function RealitaTab() {
     };
 
     const handleCloseLevelUp = () => {
-        setLevelUpCelebration(null);
+        clearPendingLevelUp();
     };
 
     const handleCloseReport = () => {
@@ -77,11 +58,11 @@ export default function RealitaTab() {
                 onEndDay={handleEndDay}
             />
             <SleepAnimation visible={sleepState === 'animating'} onFinish={handleAnimationFinish} />
-            {levelUpCelebration && (
+            {pendingLevelUp && (
                 <LevelUpPopup
                     visible
-                    level={levelUpCelebration.level}
-                    levelUpCount={levelUpCelebration.levelUpCount}
+                    level={pendingLevelUp.level}
+                    levelUpCount={pendingLevelUp.levelUpCount}
                     onClose={handleCloseLevelUp}
                 />
             )}

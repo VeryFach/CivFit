@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "137900274417-keitehol0k5a294ljmafbaa62lrsji5s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anonymous.CivFit",
+            "certificate_hash": "a95fbf31c4cd7470b0ac0c6111d12c662bff3e5b"
+          }
+        },
+        {
           "client_id": "137900274417-dkfq24oo21fc678jnsaboqdth8tubl0o.apps.googleusercontent.com",
           "client_type": 3
         }
