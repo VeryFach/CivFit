@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -13,9 +13,8 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  if (!loading && !currentUser) {
-    return <Redirect href="/(auth)/login" />;
-  }
+  // Auth redirect is handled once in app/index.tsx to avoid duplicate navigation/linking paths.
+  // Keep Tabs layout passive so Expo Router only owns linking in one place.
 
   const palette = isDarkMode
     ? {

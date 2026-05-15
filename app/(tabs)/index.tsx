@@ -1,9 +1,10 @@
+import LevelUpPopup from '@/components/common/LevelUpPopup';
 import SleepAnimation from '@/components/common/SleepAnimation';
 import { DayReport } from '@/core/progression/engine';
 import Reality from '@/features/habits/reality';
 import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
 import { useCivStore } from '@/store';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
 export default function RealitaTab() {
@@ -18,10 +19,31 @@ export default function RealitaTab() {
 
     const [sleepState, setSleepState] = useState<'idle' | 'animating' | 'summary'>('idle');
     const [report, setReport] = useState<DayReport | null>(null);
+    const [levelUpCelebration, setLevelUpCelebration] = useState<{ level: number; levelUpCount: number } | null>(null);
+
+    const hasInitializedLevelRef = useRef(false);
+    const lastSeenLevelRef = useRef(stats.level);
+
+    useEffect(() => {
+        if (!hasInitializedLevelRef.current) {
+            hasInitializedLevelRef.current = true;
+            lastSeenLevelRef.current = stats.level;
+            return;
+        }
+
+        if (stats.level > lastSeenLevelRef.current) {
+            setLevelUpCelebration({
+                level: stats.level,
+                levelUpCount: stats.level - lastSeenLevelRef.current,
+            });
+        }
+
+        lastSeenLevelRef.current = stats.level;
+    }, [stats.level]);
 
     const handleEndDay = async () => {
         const result = await endDay();
-        if (result) { // ✅ hanya set jika result ada (bukan undefined)
+        if (result) {
             setReport(result);
             setSleepState('animating');
         }
@@ -29,6 +51,10 @@ export default function RealitaTab() {
 
     const handleAnimationFinish = () => {
         setSleepState('summary');
+    };
+
+    const handleCloseLevelUp = () => {
+        setLevelUpCelebration(null);
     };
 
     const handleCloseReport = () => {
@@ -43,6 +69,7 @@ export default function RealitaTab() {
                 logs={logs}
                 hp={stats.hp}
                 momentum={stats.momentum}
+                dayCount={stats.dayCount}
                 onAdd={addHabit}
                 onComplete={completeHabit}
                 onUpdate={updateHabit}
@@ -50,6 +77,14 @@ export default function RealitaTab() {
                 onEndDay={handleEndDay}
             />
             <SleepAnimation visible={sleepState === 'animating'} onFinish={handleAnimationFinish} />
+            {levelUpCelebration && (
+                <LevelUpPopup
+                    visible
+                    level={levelUpCelebration.level}
+                    levelUpCount={levelUpCelebration.levelUpCount}
+                    onClose={handleCloseLevelUp}
+                />
+            )}
             {sleepState === 'summary' && report && (
                 <DailyReportOverlay
                     report={report}

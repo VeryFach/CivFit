@@ -1,7 +1,7 @@
 
 export enum Era {
     STONE_AGE = 'STONE AGE',
-    MEDIEVAL = 'MEDIEVALedieval',
+    MEDIEVAL = 'MEDIEVAL',
     INDUSTRIAL = 'INDUSTRIAL',
     MODERN = 'MODERN',
     DIGITAL = 'DIGITAL'
@@ -65,6 +65,9 @@ export interface DailyReport {
     deathCount?: number;
     event?: DisasterEvent;
     emergencyHabitAdded?: boolean;
+    levelUpCount?: number;
+    previousLevel?: number;
+    newLevel?: number;
 }
 
 export interface DisasterEvent {

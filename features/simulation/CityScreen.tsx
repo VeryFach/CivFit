@@ -1,6 +1,6 @@
 import { BUILDINGS, ERAS_CONFIG, GRID_SIZE } from '@/core/constants';
-import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus, isValidGridCoord } from '@/core/simulation/cityUtils';
-import { BuildingType, CityState, Era, PlacedBuilding, UserStats } from '@/core/types';
+import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus } from '@/core/simulation/cityUtils';
+import { BuildingType, CityState, PlacedBuilding, UserStats } from '@/core/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDebounce } from '@/hooks/useDebounce';
 import * as LucideIcons from 'lucide-react-native';
@@ -8,14 +8,19 @@ import {
     AlertTriangle,
     Coins,
     Dna,
+    Ham,
     Hammer,
+    Home,
+    Landmark,
     Navigation,
     Search,
+    SmilePlus,
     Trash2,
     TrendingUp,
-    X
+    UsersRound,
+    X,
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
@@ -155,6 +160,8 @@ export default function CityTab({
     const healthStatus = getHealthStatus(city.health);
     const happinessStatus = getHappinessStatus(city.happiness ?? 100);
     const productivityStatus = getProductivityStatus(summary.taxMultiplier);
+
+    const resourceIconSize = Math.max(14, screenWidth * 0.035);
 
     // Filter dan scaling bangunan
     const filteredBuildings = useMemo(() => {
@@ -316,14 +323,24 @@ export default function CityTab({
                     {/* Resource cards */}
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
                         <View style={[styles.resourceCard, summary.isHomeless && styles.resourceCardWarning, { flexBasis: screenWidth > 500 ? '48%' : '100%', backgroundColor: palette.resourceCardBg, borderColor: palette.resourceCardBorder }]}>
-                            <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Citizens / Housing</Text>
+                            <View style={styles.resourceTitleRow}>
+                                <View style={[styles.resourceIconWrap, { backgroundColor: palette.overlay }]}>
+                                    <Home size={resourceIconSize} color={palette.accentTeal} />
+                                </View>
+                                <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Citizens / Housing</Text>
+                            </View>
                             <Text style={{ fontSize: resourceValueFont, fontWeight: '900', marginVertical: 4, color: palette.text }}>{city.population} <Text style={{ opacity: 0.5 }}>/ {summary.totalHousing}</Text></Text>
                             <View style={styles.progressBar}>
                                 <View style={[styles.progressFill, { width: `${Math.min(100, (city.population / (summary.totalHousing || 1)) * 100)}%`, backgroundColor: summary.isHomeless ? '#FFF' : palette.accentTeal }]} />
                             </View>
                         </View>
                         <View style={[styles.resourceCard, summary.isHungry && styles.resourceCardHunger, { flexBasis: screenWidth > 500 ? '48%' : '100%', backgroundColor: palette.resourceCardBg, borderColor: palette.resourceCardBorder }]}>
-                            <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Required / Food</Text>
+                            <View style={styles.resourceTitleRow}>
+                                <View style={[styles.resourceIconWrap, { backgroundColor: palette.overlay }]}>
+                                    <Ham size={resourceIconSize} color={palette.accentGold} />
+                                </View>
+                                <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Required / Food</Text>
+                            </View>
                             <Text style={{ fontSize: resourceValueFont, fontWeight: '900', marginVertical: 4, color: palette.text }}>{summary.foodRequired} <Text style={{ opacity: 0.5 }}>/ {summary.totalFoodProduction}</Text></Text>
                             <View style={styles.progressBar}>
                                 <View style={[styles.progressFill, { width: `${Math.min(100, (summary.foodRequired / (summary.totalFoodProduction || 1)) * 100)}%`, backgroundColor: palette.accentGold }]} />
@@ -333,7 +350,12 @@ export default function CityTab({
 
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                         <View style={[styles.resourceCard, { flexBasis: screenWidth > 500 ? '48%' : '100%', backgroundColor: palette.resourceCardBg, borderColor: palette.resourceCardBorder }]}>
-                            <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Daily S / Prod</Text>
+                            <View style={styles.resourceTitleRow}>
+                                <View style={[styles.resourceIconWrap, { backgroundColor: palette.overlay }]}>
+                                    <Landmark size={resourceIconSize} color={palette.accentTeal} />
+                                </View>
+                                <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Daily S / Prod</Text>
+                            </View>
                             <Text style={{ fontSize: resourceValueFont, fontWeight: '900', color: palette.accentTeal }}>+{summary.totalSilverIncome}</Text>
                             <Text style={[styles.eraSub, { color: productivityStatus.color, fontSize: smallCapsFont }]}>{productivityStatus.label}</Text>
                             <View style={styles.progressBar}>
@@ -341,7 +363,12 @@ export default function CityTab({
                             </View>
                         </View>
                         <View style={[styles.resourceCard, { flexBasis: screenWidth > 500 ? '48%' : '100%', backgroundColor: palette.resourceCardBg, borderColor: palette.resourceCardBorder }]}>
-                            <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Happiness</Text>
+                            <View style={styles.resourceTitleRow}>
+                                <View style={[styles.resourceIconWrap, { backgroundColor: palette.overlay }]}>
+                                    <SmilePlus size={resourceIconSize} color={palette.accentRed} />
+                                </View>
+                                <Text style={{ fontSize: smallCapsFont, fontWeight: '800', textTransform: 'uppercase', color: palette.textFaint }}>Happiness</Text>
+                            </View>
                             <Text style={{ fontSize: resourceValueFont, fontWeight: '900', marginVertical: 4, color: palette.text }}>{city.happiness ?? 100}%</Text>
                             <Text style={[styles.eraSub, { color: happinessStatus.color, fontSize: smallCapsFont }]}>{happinessStatus.label}</Text>
                             <View style={styles.progressBar}>
@@ -548,6 +575,8 @@ const styles = StyleSheet.create({
     eraSub: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, marginRight: 8 },
     resourceCard: { padding: 16, borderRadius: 24, borderWidth: 1 },
+    resourceTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    resourceIconWrap: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     resourceCardWarning: { backgroundColor: '#EF4444' },
     resourceCardHunger: { backgroundColor: '#FBBF24' },
     progressBar: { height: 4, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.1)', marginTop: 8, overflow: 'hidden' },

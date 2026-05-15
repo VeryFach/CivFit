@@ -28,6 +28,7 @@ interface RealitaTabProps {
     logs: ActivityLog[];
     hp: number;
     momentum: number;
+    dayCount: number;
     onAdd: (title: string, type: HabitType) => void;
     onComplete: (id: string) => void;
     onUpdate: (id: string, updates: Partial<Habit>) => void;
@@ -40,6 +41,7 @@ export default function RealitaTab({
     logs,
     hp,
     momentum,
+    dayCount,
     onAdd,
     onComplete,
     onUpdate,
@@ -61,12 +63,23 @@ export default function RealitaTab({
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    const today = new Date().toISOString().split('T')[0];
+    const getLocalDateKey = (value: string | Date) => {
+        const date = value instanceof Date ? value : new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return typeof value === 'string' ? value.slice(0, 10) : '';
+        }
+
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    const habitDayKey = `day-${dayCount}`;
+    const todayDateKey = getLocalDateKey(new Date());
     const activeHabits = habits.filter(h => h.type === 'daily');
     const filteredHabits = habits.filter(h => categoryFilter === 'all' || h.type === categoryFilter);
 
     const completionRate = activeHabits.length > 0
-        ? activeHabits.filter(h => h.completedDates.includes(today)).length / activeHabits.length
+        ? activeHabits.filter(h => h.completedDates.includes(habitDayKey)).length / activeHabits.length
         : 0;
 
     const momentumStatus =
@@ -78,16 +91,6 @@ export default function RealitaTab({
         momentum >= 80 ? '#FBBF24' :
         momentum >= 50 ? '#14B8A6' :
         momentum >= 20 ? '#8B5CF6' : '#EF4444';
-
-    const getLocalDateKey = (value: string | Date) => {
-        const date = value instanceof Date ? value : new Date(value);
-
-        if (Number.isNaN(date.getTime())) {
-            return typeof value === 'string' ? value.slice(0, 10) : '';
-        }
-
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    };
 
     const handleAdd = () => {
         if (newHabit.trim()) {
@@ -204,7 +207,7 @@ export default function RealitaTab({
                             return <View key={`empty-${idx}`} style={styles.calendarDayCell} />;
                         }
                         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isToday = dateStr === today;
+                        const isToday = dateStr === todayDateKey;
                         const logCount = monthLogCounts.get(dateStr) ?? 0;
                         const heatLevel = getHeatLevel(logCount);
 
@@ -413,7 +416,7 @@ export default function RealitaTab({
                             </View>
                         ) : (
                             filteredHabits.map(habit => {
-                                const isCompleted = habit.completedDates.includes(today);
+                                const isCompleted = habit.completedDates.includes(habitDayKey);
                                 const isEmergency = habit.title.startsWith('Mitigasi:');
                                 return (
                                     <TouchableOpacity

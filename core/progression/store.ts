@@ -15,7 +15,7 @@ import {
     writeBatch
 } from 'firebase/firestore';
 import { create } from 'zustand';
-import { DEFAULT_HP, EXP_PER_LEVEL, GRID_SIZE } from '../constants';
+import { DEFAULT_HP, ERAS_CONFIG, EVOLUTION_BRANCHES, EXP_PER_LEVEL, GRID_SIZE } from '../constants';
 import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '../types';
 import { DayReport, processEndDay } from './engine';
 
@@ -30,6 +30,53 @@ const isPermissionDeniedError = (error: unknown) => {
     if (!(error instanceof Error)) return false;
     const message = error.message.toLowerCase();
     return message.includes('missing or insufficient permissions') || message.includes('permission-denied');
+};
+
+const getLocalDateKey = (value: Date = new Date()) => {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+};
+
+const getHabitDayKey = (dayCount: number) => `day-${dayCount}`;
+
+const normalizeEra = (value: Era | string | undefined): Era => {
+    if (value === 'MEDIEVALedieval') return Era.MEDIEVAL;
+    if (value === Era.STONE_AGE || value === Era.MEDIEVAL || value === Era.INDUSTRIAL || value === Era.MODERN || value === Era.DIGITAL) {
+        return value;
+    }
+    return Era.STONE_AGE;
+};
+
+const getEraRank = (era: Era) => {
+    const index = ERAS_CONFIG.findIndex(item => item.id === era);
+    return index >= 0 ? index : 0;
+};
+
+const promoteEra = (currentEra: Era, candidateEra: Era) => {
+    return getEraRank(candidateEra) > getEraRank(currentEra) ? candidateEra : currentEra;
+};
+
+const getEraFromLevel = (level: number): Era => {
+    const eligibleEras = ERAS_CONFIG
+        .filter(item => level >= item.minLevel)
+        .map(item => item.id as Era);
+
+    return eligibleEras.length > 0 ? eligibleEras[eligibleEras.length - 1] : Era.STONE_AGE;
+};
+
+const getEraFromUnlockedEvolutions = (unlockedEvolutions: string[] | undefined): Era => {
+    return (unlockedEvolutions || []).reduce<Era>((bestEra, branchId) => {
+        const branch = EVOLUTION_BRANCHES.find(item => item.id === branchId);
+        return branch ? promoteEra(bestEra, branch.era) : bestEra;
+    }, Era.STONE_AGE);
+};
+
+const resolveCityEra = (city: CityState, stats: UserStats): Era => {
+    const savedEra = normalizeEra(city.currentEra);
+    const levelEra = getEraFromLevel(stats.level);
+    const evolutionEra = getEraFromUnlockedEvolutions(city.unlockedEvolutions);
+
+    const candidates: Era[] = [savedEra, levelEra, evolutionEra];
+    return candidates.reduce<Era>((bestEra, candidateEra) => promoteEra(bestEra, candidateEra), Era.STONE_AGE);
 };
 
 interface CivState {
@@ -126,9 +173,25 @@ export const useCivStore = create<CivState>((set, get) => ({
                 unsubs.push(onSnapshot(userDocRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const data = snapshot.data();
+                        const incomingCity = data.city || INITIAL_CITY;
+                        const incomingStats = data.stats || INITIAL_STATS;
+                        const resolvedEra = resolveCityEra(incomingCity, incomingStats);
+                        const needsEraMigration = normalizeEra(incomingCity.currentEra) !== resolvedEra;
+                        const nextCity = {
+                            ...incomingCity,
+                            currentEra: resolvedEra,
+                        };
+
+                        if (needsEraMigration) {
+                            setDoc(userDocRef, {
+                                city: nextCity,
+                                updatedAt: serverTimestamp()
+                            }, { merge: true }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${currentUid}`));
+                        }
+
                         set({
-                            stats: data.stats || INITIAL_STATS,
-                            city: data.city || INITIAL_CITY,
+                            stats: incomingStats,
+                            city: nextCity,
                             loading: false
                         });
                     } else {
@@ -278,7 +341,7 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     completeHabit: async (id) => {
         const { stats, habits, currentUser, addLog } = get();
-        const today = new Date().toISOString().split('T')[0];
+        const today = getHabitDayKey(stats.dayCount);
         const h = habits.find(habit => habit.id === id);
         if (!h || h.completedDates.includes(today)) return;
 
@@ -315,6 +378,9 @@ export const useCivStore = create<CivState>((set, get) => ({
         };
 
         if (currentUser) {
+            // Optimistic local update so level-up UI reacts immediately, without waiting for Firestore snapshot latency.
+            set({ stats: updatedStats, habits: habits.map(habit => habit.id === id ? updatedHabit : habit) });
+
             const batch = writeBatch(db);
             batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, updatedAt: serverTimestamp() }, { merge: true });
 
@@ -352,7 +418,12 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     endDay: async () => {
         const { stats, city, buildings, habits, currentUser, addLog, addHabit } = get();
-        const today = new Date().toISOString().split('T')[0];
+        const today = getHabitDayKey(stats.dayCount);
+
+        // Temporary: disable same-day guard while debugging end-day flow.
+        // if (stats.lastEndDay === today) {
+        //     return undefined;
+        // }
 
         const { updatedStats, updatedCity, report, resetHabitIds } = processEndDay(stats, city, buildings, habits, today);
 
@@ -473,8 +544,12 @@ export const useCivStore = create<CivState>((set, get) => ({
         const { stats, city, currentUser, addLog } = get();
         if (city.unlockedEvolutions?.includes(branchId)) return false;
 
+        const branch = EVOLUTION_BRANCHES.find(item => item.id === branchId);
+        const promotedEra = branch ? promoteEra(normalizeEra(city.currentEra), branch.era) : normalizeEra(city.currentEra);
+
         const newCity = {
             ...city,
+            currentEra: promotedEra,
             unlockedEvolutions: [...(city.unlockedEvolutions || []), branchId]
         };
 

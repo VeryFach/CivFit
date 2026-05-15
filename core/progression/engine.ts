@@ -1,6 +1,14 @@
 import { DISASTERS, ERA_MILESTONES } from '../constants';
 import { calculateCitySummary } from '../simulation/cityUtils';
-import { CityState, Era, Habit, UserStats, PlacedBuilding } from '../types';
+import { CityState, Era, Habit, PlacedBuilding, UserStats } from '../types';
+
+const normalizeEra = (value: Era | string): Era => {
+  if (value === 'MEDIEVALedieval') return Era.MEDIEVAL;
+  if (value === Era.STONE_AGE || value === Era.MEDIEVAL || value === Era.INDUSTRIAL || value === Era.MODERN || value === Era.DIGITAL) {
+    return value;
+  }
+  return Era.STONE_AGE;
+};
 
 export interface DayReport {
   date: string;
@@ -19,6 +27,9 @@ export interface DayReport {
   event: any;
   emergencyHabitAdded: boolean;
   message: string;
+  levelUpCount: number;
+  previousLevel: number;
+  newLevel: number;
 }
 
 export const processEndDay = (
@@ -34,12 +45,13 @@ export const processEndDay = (
   resetHabitIds: string[];
 } => {
   const dailyHabits = habits.filter(h => h.type === 'daily');
+  const finishedDailyToday = dailyHabits.filter(h => h.completedDates.includes(today));
   const unfinishedDaily = dailyHabits.filter(h => !h.completedDates.includes(today));
   const finishedToday = habits.filter(h => h.completedDates.includes(today));
 
   const canSkip = stats.skipTickets > 0 && unfinishedDaily.length > dailyHabits.length * 0.5;
   let ticketUsed = false;
-  const completionRate = dailyHabits.length > 0 ? finishedToday.length / dailyHabits.length : 1;
+  const completionRate = dailyHabits.length > 0 ? finishedDailyToday.length / dailyHabits.length : 1;
 
   let hpChange = 0;
   let momentumChange = 0;
@@ -105,9 +117,10 @@ export const processEndDay = (
     if (activeDisaster.impactType === 'happiness') finalHappiness = Math.max(0, finalHappiness - activeDisaster.severity);
   }
 
-  let nextEra = city.currentEra;
+  const currentEra = normalizeEra(city.currentEra);
+  let nextEra = currentEra;
   const eraOrder = [Era.STONE_AGE, Era.MEDIEVAL, Era.INDUSTRIAL, Era.MODERN, Era.DIGITAL];
-  const currentIndex = eraOrder.indexOf(city.currentEra);
+  const currentIndex = eraOrder.indexOf(currentEra);
   if (currentIndex < eraOrder.length - 1) {
     const nextEraType = eraOrder[currentIndex + 1];
     const milestone = ERA_MILESTONES.find(m => m.era === nextEraType);
@@ -116,9 +129,11 @@ export const processEndDay = (
     }
   }
 
+  const levelUpCount = Math.max(0, stats.level - stats.lastCelebratedLevel);
+
   const report: DayReport = {
     date: today,
-    habitsCompleted: finishedToday.length,
+    habitsCompleted: finishedDailyToday.length,
     habitsTotal: dailyHabits.length,
     goldGained: finishedToday.reduce((sum, h) => sum + h.goldReward, 0),
     expGained: finishedToday.reduce((sum, h) => sum + h.expReward, 0),
@@ -132,6 +147,9 @@ export const processEndDay = (
     deathCount,
     event: activeDisaster,
     emergencyHabitAdded: !!activeDisaster,
+    levelUpCount,
+    previousLevel: stats.lastCelebratedLevel,
+    newLevel: stats.level,
     message: ticketUsed
       ? "Emergency Protocol Activated: Ticket used to safeguard simulation."
       : (activeDisaster ? eventImpactMessage : (hpChange >= 0 ? "You dominated the day! Momentum is building." : "A rough day in the simulation. Stay consistent."))
