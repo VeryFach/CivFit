@@ -1,4 +1,4 @@
-import { Habit, HabitType } from '@/core/types';
+import { ActivityLog, Habit, HabitType } from '@/core/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
     Calendar as CalendarIcon,
@@ -20,17 +20,12 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    UIManager,
     View,
 } from 'react-native';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 interface RealitaTabProps {
     habits: Habit[];
+    logs: ActivityLog[];
     hp: number;
     momentum: number;
     onAdd: (title: string, type: HabitType) => void;
@@ -42,6 +37,7 @@ interface RealitaTabProps {
 
 export default function RealitaTab({
     habits,
+    logs,
     hp,
     momentum,
     onAdd,
@@ -83,6 +79,16 @@ export default function RealitaTab({
         momentum >= 50 ? '#14B8A6' :
         momentum >= 20 ? '#8B5CF6' : '#EF4444';
 
+    const getLocalDateKey = (value: string | Date) => {
+        const date = value instanceof Date ? value : new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return typeof value === 'string' ? value.slice(0, 10) : '';
+        }
+
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
     const handleAdd = () => {
         if (newHabit.trim()) {
             onAdd(newHabit, habitType);
@@ -99,14 +105,19 @@ export default function RealitaTab({
         }
     };
 
+    const getDefaultHabitType = () => {
+        return categoryFilter === 'all' ? 'daily' : categoryFilter;
+    };
+
     const startEdit = (habit: Habit) => {
         setEditingHabit(habit);
         setNewHabit(habit.title);
         setHabitType(habit.type);
-        openBottomSheet();
+        openBottomSheet(habit.type);
     };
 
-    const openBottomSheet = () => {
+    const openBottomSheet = (defaultType: HabitType = getDefaultHabitType()) => {
+        setHabitType(defaultType);
         setIsAdding(true);
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -132,6 +143,37 @@ export default function RealitaTab({
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
         const offset = firstDay === 0 ? 6 : firstDay - 1;
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const habitLogs = logs.filter(log => log.type === 'habit');
+
+        const monthLogCounts = new Map<string, number>();
+        habitLogs.forEach(log => {
+            const dateKey = getLocalDateKey(log.timestamp);
+            if (dateKey.startsWith(monthKey)) {
+                monthLogCounts.set(dateKey, (monthLogCounts.get(dateKey) ?? 0) + 1);
+            }
+        });
+
+        const maxLogCount = Math.max(0, ...Array.from(monthLogCounts.values()));
+
+        const heatColors = [
+            '#E2E8F0',
+            '#BBF7D0',
+            '#86EFAC',
+            '#22C55E',
+            '#15803D',
+        ];
+
+        const getHeatLevel = (count: number) => {
+            if (count <= 0) return 0;
+            if (maxLogCount <= 1) return 4;
+
+            const ratio = count / maxLogCount;
+            if (ratio < 0.25) return 1;
+            if (ratio < 0.5) return 2;
+            if (ratio < 0.75) return 3;
+            return 4;
+        };
 
         const days: (number | null)[] = [];
         for (let i = 0; i < offset; i++) days.push(null);
@@ -163,10 +205,8 @@ export default function RealitaTab({
                         }
                         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const isToday = dateStr === today;
-                        const completedCount = habits.filter(h => h.completedDates.includes(dateStr)).length;
-                        const totalHabits = habits.length;
-                        const intensity = totalHabits > 0 ? completedCount / totalHabits : 0;
-                        const bgIntensity = intensity > 0 ? `rgba(45, 204, 113, ${0.1 + intensity * 0.9})` : '#F8FAFC';
+                        const logCount = monthLogCounts.get(dateStr) ?? 0;
+                        const heatLevel = getHeatLevel(logCount);
 
                         return (
                             <TouchableOpacity
@@ -174,14 +214,19 @@ export default function RealitaTab({
                                 style={[
                                     styles.calendarDayCell,
                                     isToday && styles.calendarDayToday,
-                                    { backgroundColor: isToday ? '#EF4444' : bgIntensity },
+                                    { backgroundColor: heatColors[heatLevel] },
                                 ]}
                                 activeOpacity={0.7}
                             >
-                                <Text style={[styles.calendarDayText, isToday && styles.calendarDayTextToday]}>
+                                <Text
+                                    style={[
+                                        styles.calendarDayText,
+                                        heatLevel >= 3 && styles.calendarDayTextToday,
+                                        isToday && styles.calendarDayTextToday,
+                                    ]}
+                                >
                                     {day}
                                 </Text>
-                                {intensity > 0 && !isToday && <View style={styles.calendarDot} />}
                             </TouchableOpacity>
                         );
                     })}
@@ -189,12 +234,16 @@ export default function RealitaTab({
 
                 <View style={styles.calendarLegend}>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendBox, { backgroundColor: '#F8FAFC', borderColor: '#CBD5E1' }]} />
-                        <Text style={styles.legendText}>Low</Text>
+                        <View style={[styles.legendBox, { backgroundColor: heatColors[0] }]} />
+                        <Text style={styles.legendText}>No logs</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendBox, { backgroundColor: '#14B8A6', borderColor: '#0F172A' }]} />
-                        <Text style={styles.legendText}>High Impact</Text>
+                        <View style={[styles.legendBox, { backgroundColor: heatColors[2] }]} />
+                        <Text style={styles.legendText}>Medium</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendBox, { backgroundColor: heatColors[4] }]} />
+                        <Text style={styles.legendText}>High</Text>
                     </View>
                 </View>
             </View>
@@ -329,7 +378,7 @@ export default function RealitaTab({
                             <Layers size={16} color="#14B8A6" />
                             <Text style={styles.habitsTitle}>Inventory Habit</Text>
                         </View>
-                        <TouchableOpacity style={styles.addButton} onPress={openBottomSheet}>
+                        <TouchableOpacity style={styles.addButton} onPress={() => openBottomSheet()}>
                             <Plus size={20} color="#1E293B" />
                         </TouchableOpacity>
                     </View>
@@ -358,7 +407,7 @@ export default function RealitaTab({
                                 <Text style={styles.emptyDesc}>
                                     Belum ada habit yang direncanakan.{'\n'}Mulai evolusi pertamamu!
                                 </Text>
-                                <TouchableOpacity style={styles.emptyButton} onPress={openBottomSheet}>
+                                <TouchableOpacity style={styles.emptyButton} onPress={() => openBottomSheet()}>
                                     <Text style={styles.emptyButtonText}>Tambah Habit</Text>
                                 </TouchableOpacity>
                             </View>

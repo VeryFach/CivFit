@@ -8,6 +8,7 @@ import { SafeAreaView, StyleSheet } from 'react-native';
 
 export default function RealitaTab() {
     const habits = useCivStore((state) => state.habits);
+    const logs = useCivStore((state) => state.logs);
     const stats = useCivStore((state) => state.stats);
     const addHabit = useCivStore((state) => state.addHabit);
     const completeHabit = useCivStore((state) => state.completeHabit);
@@ -39,6 +40,7 @@ export default function RealitaTab() {
         <SafeAreaView style={styles.container}>
             <Reality
                 habits={habits}
+                logs={logs}
                 hp={stats.hp}
                 momentum={stats.momentum}
                 onAdd={addHabit}
