@@ -72,19 +72,42 @@ handleFirestoreError(
         string | null
 ) {
 
+    const errorMessage =
+
+        error instanceof Error
+
+            ? error.message
+
+            : String(error);
+
+    const normalizedErrorMessage =
+
+        errorMessage
+            .toLowerCase();
+
+    const isPermissionDenied =
+
+        normalizedErrorMessage.includes(
+            'missing or insufficient permissions'
+        ) ||
+
+        normalizedErrorMessage.includes(
+            'permission-denied'
+        );
+
     const isRetryable =
 
         error instanceof Error && (
 
-            error.message.includes(
+            errorMessage.includes(
                 'unavailable'
             ) ||
 
-            error.message.includes(
+            errorMessage.includes(
                 'offline'
             ) ||
 
-            error.message.includes(
+            errorMessage.includes(
                 'internal'
             )
         );
@@ -94,11 +117,7 @@ handleFirestoreError(
 
         error:
 
-            error instanceof Error
-
-                ? error.message
-
-                : String(error),
+            errorMessage,
 
         timestamp:
             new Date()
@@ -147,6 +166,18 @@ handleFirestoreError(
         `[${errInfo.timestamp}] Firestore Error (${operationType} ${path}):`,
         errInfo
     );
+
+    // During sign-out, stale listeners can briefly emit permission errors.
+    // This is expected and should not crash the app.
+    if (
+        isPermissionDenied &&
+        !auth.currentUser
+    ) {
+        console.warn(
+            `[${errInfo.timestamp}] Ignored permission error after sign-out`
+        );
+        return;
+    }
 
     // retryable error
     // do not crash app

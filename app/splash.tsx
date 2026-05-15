@@ -1,5 +1,3 @@
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
@@ -11,7 +9,6 @@ import { COLORS } from '@/theme';
  * Displays loading animation while auth and store are initializing
  */
 export default function SplashScreen() {
-    const router = useRouter();
     const isDarkMode = useColorScheme() === 'dark';
     const palette = isDarkMode
         ? {
@@ -26,15 +23,6 @@ export default function SplashScreen() {
             accent: COLORS.teal,
             muted: '#999',
         };
-
-    useEffect(() => {
-        // Give time for auth state to settle
-        const timer = setTimeout(() => {
-            router.replace('/(auth)/login');
-        }, 2000);
-
-        return () => clearTimeout(timer);
-    }, [router]);
 
     return (
         <View style={[styles.container, { backgroundColor: palette.background }]}>

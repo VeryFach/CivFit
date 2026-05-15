@@ -1,5 +1,4 @@
-import { handleFirestoreError, OperationType } from '@/services/firebase';
-import { auth, db } from '@/services/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '@/services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import {
     collection,
@@ -23,6 +22,15 @@ import { DayReport, processEndDay } from './engine';
 type GachaRewardType = 'gold' | 'silver' | 'exp' | 'hp';
 type GachaReward = { type: GachaRewardType; amount: number; message: string } | null;
 type ConversionStatus = { show: boolean; success: boolean; message: string; type: 'gold' | 'silver' } | null;
+
+let unsubscribeAuthListener: (() => void) | null = null;
+let unsubscribeUserScopedListeners: (() => void) | null = null;
+
+const isPermissionDeniedError = (error: unknown) => {
+    if (!(error instanceof Error)) return false;
+    const message = error.message.toLowerCase();
+    return message.includes('missing or insufficient permissions') || message.includes('permission-denied');
+};
 
 interface CivState {
     currentUser: User | null;
@@ -90,15 +98,32 @@ export const useCivStore = create<CivState>((set, get) => ({
     buildings: [],
 
     initialize: async () => {
+        if (unsubscribeAuthListener) return;
+
         await checkStorageVersion();
 
-        onAuthStateChanged(auth, (user) => {
+        unsubscribeAuthListener = onAuthStateChanged(auth, (user) => {
+            // Always clear previous user listeners first to avoid stale reads after logout/switch.
+            unsubscribeUserScopedListeners?.();
+            unsubscribeUserScopedListeners = null;
+
             set({ currentUser: user });
 
             if (user) {
+                const currentUid = user.uid;
+                const unsubs: Array<() => void> = [];
+                const handleListenerError = (error: unknown, operationType: OperationType, path: string) => {
+                    // During logout/account switch, Firestore may emit a final permission error before listener teardown.
+                    if (isPermissionDeniedError(error)) {
+                        console.warn(`[Firestore Listener] Ignored permission error on ${path}`);
+                        return;
+                    }
+                    handleFirestoreError(error, operationType, path);
+                };
+
                 // User profile (Stats & City)
-                const userDocRef = doc(db, 'users', user.uid);
-                onSnapshot(userDocRef, (snapshot) => {
+                const userDocRef = doc(db, 'users', currentUid);
+                unsubs.push(onSnapshot(userDocRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const data = snapshot.data();
                         set({
@@ -112,14 +137,14 @@ export const useCivStore = create<CivState>((set, get) => ({
                             city: INITIAL_CITY,
                             updatedAt: serverTimestamp()
                         };
-                        setDoc(userDocRef, initialData).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`));
+                        setDoc(userDocRef, initialData).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${currentUid}`));
                         set({ loading: false });
                     }
-                }, (error) => handleFirestoreError(error, OperationType.GET, `users/${user.uid}`));
+                }, (error) => handleListenerError(error, OperationType.GET, `users/${currentUid}`)));
 
                 // Habits subcollection
-                const habitsRef = collection(db, 'users', user.uid, 'habits');
-                onSnapshot(query(habitsRef), (snapshot) => {
+                const habitsRef = collection(db, 'users', currentUid, 'habits');
+                unsubs.push(onSnapshot(query(habitsRef), (snapshot) => {
                     const habitsList = snapshot.docs.map(doc => {
                         const data = doc.data();
                         return {
@@ -131,11 +156,11 @@ export const useCivStore = create<CivState>((set, get) => ({
                         } as Habit;
                     });
                     set({ habits: habitsList });
-                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/habits`));
+                }, (error) => handleListenerError(error, OperationType.LIST, `users/${currentUid}/habits`)));
 
                 // Logs subcollection
-                const logsRef = collection(db, 'users', user.uid, 'logs');
-                onSnapshot(query(logsRef, orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
+                const logsRef = collection(db, 'users', currentUid, 'logs');
+                unsubs.push(onSnapshot(query(logsRef, orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                     const logsList = snapshot.docs.map(doc => {
                         const data = doc.data();
                         return {
@@ -145,11 +170,11 @@ export const useCivStore = create<CivState>((set, get) => ({
                         } as ActivityLog;
                     });
                     set({ logs: logsList });
-                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/logs`));
+                }, (error) => handleListenerError(error, OperationType.LIST, `users/${currentUid}/logs`)));
 
                 // Buildings subcollection (Firestore architecture)
-                const buildingsRef = collection(db, 'users', user.uid, 'buildings');
-                onSnapshot(buildingsRef, (snapshot) => {
+                const buildingsRef = collection(db, 'users', currentUid, 'buildings');
+                unsubs.push(onSnapshot(buildingsRef, (snapshot) => {
                     const buildingsList = snapshot.docs.map(doc => {
                         console.log(
   'RAW DOCS:',
@@ -170,7 +195,11 @@ export const useCivStore = create<CivState>((set, get) => ({
                         } as PlacedBuilding;
                     });
                     set({ buildings: buildingsList });
-                }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/buildings`));
+                }, (error) => handleListenerError(error, OperationType.LIST, `users/${currentUid}/buildings`)));
+
+                unsubscribeUserScopedListeners = () => {
+                    unsubs.forEach((unsubscribe) => unsubscribe());
+                };
             } else {
                 set({ loading: false, habits: [], logs: [], buildings: [], stats: INITIAL_STATS, city: INITIAL_CITY });
             }

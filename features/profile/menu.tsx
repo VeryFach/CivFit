@@ -2,6 +2,7 @@ import { LeaderboardTab } from '@/features/leaderboard/leaderbord';
 import { auth } from '@/services/firebase';
 import { useCivStore } from '@/store';
 import { useThemeStore } from '@/store/themeStore';
+import { router } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import {
     ArrowDownLeft,
@@ -91,6 +92,20 @@ export function MenuTab() {
             Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }),
         ]).start();
     }, [activeSection]);
+
+    const todayKey = new Date().toISOString().split('T')[0];
+
+    const getLocalDateKey = (value: string) => {
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return value.slice(0, 10);
+        }
+
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    const todayLogs = logs.filter((log) => getLocalDateKey(log.timestamp) === todayKey);
 
     // Style dinamis berdasarkan mode
     const dynamicStyles = useMemo(() => {
@@ -190,7 +205,8 @@ export function MenuTab() {
     const handleLogout = async () => {
         const confirm = await platformConfirm('Keluar dari peradaban Fitnismu?');
         if (confirm) {
-            signOut(auth);
+            await signOut(auth);
+            router.replace('/(auth)/login');
         }
     };
 
@@ -258,15 +274,15 @@ export function MenuTab() {
                         <View style={stylesDynamic.logsCard}>
                             <View style={stylesDynamic.logsHeader}>
                                 <History size={24} color="#1E293B" />
-                                <Text style={stylesDynamic.logsTitle}>Riwayat Aktivitas</Text>
+                                <Text style={stylesDynamic.logsTitle}>Log Hari Ini</Text>
                             </View>
                             <ScrollView
                                 style={stylesDynamic.logsList}
                                 showsVerticalScrollIndicator={false}
                                 nestedScrollEnabled
                             >
-                                {(logs?.length || 0) > 0 ? (
-                                    logs.map((log) => (
+                                {todayLogs.length > 0 ? (
+                                    todayLogs.map((log) => (
                                         <View key={log.id} style={stylesDynamic.logItem}>
                                             <View style={[stylesDynamic.logIcon, log.change > 0 ? stylesDynamic.logIconPositive : stylesDynamic.logIconNegative]}>
                                                 {log.change > 0 ? <ArrowUpRight size={16} color="#FFF" /> : <ArrowDownLeft size={16} color="#FFF" />}
@@ -287,7 +303,7 @@ export function MenuTab() {
                                     ))
                                 ) : (
                                     <View style={stylesDynamic.emptyLogs}>
-                                        <Text style={stylesDynamic.emptyLogsText}>Belum ada catatan aktivitas...</Text>
+                                        <Text style={stylesDynamic.emptyLogsText}>Belum ada log hari ini...</Text>
                                     </View>
                                 )}
                             </ScrollView>

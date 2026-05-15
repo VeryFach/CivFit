@@ -1,5 +1,7 @@
+import { GachaReward } from '@/components/common/GachaChestModal';
 import StoreTab from '@/features/store/store'; // import komponen StoreTab yang sudah Anda buat
 import { useCivStore } from '@/store';
+import { Coins, Heart, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
@@ -61,32 +63,63 @@ export default function ShopTab() {
     };
 
     // Handler untuk Gacha
-    const handleGacha = () => {
+    const handleGacha = async (): Promise<GachaReward | void> => {
         if (stats.gold < 100) return;
-        
-        setStats({ ...stats, gold: stats.gold - 100 });
+
         const rand = Math.random();
-        let reward: { type: 'gold' | 'silver' | 'exp' | 'hp', amount: number, message: string };
+        let reward: GachaReward;
+        let rewardMessage = '';
 
         if (rand > 0.95) {
-            reward = { type: 'gold', amount: 500, message: 'JACKPOT! Dewa memberkatimu.' };
+            reward = {
+                type: 'gold',
+                amount: 500,
+                name: 'Ultimate Jackpot',
+                icon: <Coins size={40} color="#FBBF24" />,
+                color: '#FBBF24',
+            };
+            rewardMessage = 'JACKPOT! Dewa memberkatimu.';
         } else if (rand > 0.7) {
-            reward = { type: 'silver', amount: 1000, message: 'Kekayaan kota meningkat.' };
+            reward = {
+                type: 'silver',
+                amount: 1000,
+                name: 'Treasury Overflow',
+                icon: <Coins size={40} color="#14B8A6" />,
+                color: '#14B8A6',
+            };
+            rewardMessage = 'Kekayaan kota meningkat.';
         } else if (rand > 0.4) {
-            reward = { type: 'exp', amount: 200, message: 'Hikmat dan ilmu pengetahuan.' };
+            reward = {
+                type: 'exp',
+                amount: 200,
+                name: 'Ancient Wisdom',
+                icon: <Sparkles size={40} color="#A855F7" />,
+                color: '#A855F7',
+            };
+            rewardMessage = 'Hikmat dan ilmu pengetahuan.';
         } else {
-            reward = { type: 'hp', amount: 20, message: 'Berkat kesehatan.' };
+            reward = {
+                type: 'hp',
+                amount: 20,
+                name: 'Life Blessing',
+                icon: <Heart size={40} color="#EF4444" />,
+                color: '#EF4444',
+            };
+            rewardMessage = 'Berkat kesehatan.';
         }
 
-        // Terapkan reward
-        let updates: Partial<typeof stats> = {};
-        if (reward.type === 'gold') updates.gold = stats.gold + reward.amount;
-        if (reward.type === 'silver') updates.silver = stats.silver + reward.amount;
-        if (reward.type === 'exp') updates.exp = stats.exp + reward.amount;
-        if (reward.type === 'hp') updates.hp = Math.min(stats.maxHp, stats.hp + reward.amount);
-        
-        setStats({ ...stats, ...updates });
-        addLog('economy', `Gacha: ${reward.message}`, reward.amount, reward.type);
+        // Apply cost + reward in one atomic update so persisted stats stay consistent.
+        setStats((prev) => {
+            const nextStats = { ...prev, gold: prev.gold - 100 };
+            if (reward.type === 'gold') nextStats.gold += reward.amount;
+            if (reward.type === 'silver') nextStats.silver += reward.amount;
+            if (reward.type === 'exp') nextStats.exp += reward.amount;
+            if (reward.type === 'hp') nextStats.hp = Math.min(prev.maxHp, prev.hp + reward.amount);
+            return nextStats;
+        });
+
+        await addLog('economy', `Gacha: ${rewardMessage}`, reward.amount, reward.type);
+        return reward;
         
         // Jika ingin menampilkan popup reward, set state overlay di store
         // setGachaReward(reward);

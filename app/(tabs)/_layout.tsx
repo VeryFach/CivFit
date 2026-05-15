@@ -1,15 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Header } from '@/components/navigation/Header';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function TabLayout() {
+  const { currentUser, loading } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  if (!loading && !currentUser) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   const palette = isDarkMode
     ? {

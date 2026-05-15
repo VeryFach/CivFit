@@ -2,10 +2,6 @@ import {
     Redirect
 } from 'expo-router';
 
-import {
-    ActivityIndicator,
-    View
-} from 'react-native';
 
 import {
     useAuth
@@ -15,6 +11,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
     useCivStore
 } from '@/store';
+import SplashScreen from './splash';
 
 export default function Index() {
 
@@ -33,22 +30,7 @@ export default function Index() {
         authLoading ||
         storeLoading
     ) {
-
-        return (
-
-            <View
-                style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: isDarkMode ? '#0F172A' : '#FDF6E3',
-                }}
-            >
-
-                <ActivityIndicator />
-
-            </View>
-        );
+        return <SplashScreen />;
     }
 
     if (!currentUser) {

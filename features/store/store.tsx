@@ -1,3 +1,4 @@
+import GachaChestModal, { GachaReward } from '@/components/common/GachaChestModal';
 import { RECOVERY_ITEMS } from '@/core/constants';
 import { UserStats } from '@/core/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,23 +20,17 @@ import {
     Animated,
     Dimensions,
     Modal,
-    Platform,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    UIManager,
-    View,
+    View
 } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface StoreTabProps {
     stats: UserStats;
     onPurchase: (type: 'hp' | 'silver' | 'gold' | 'skipTicket', amount: number, cost: number) => void;
-    onGacha: () => void;
+    onGacha: () => Promise<GachaReward | void>;
 }
 
 type TransactionType = 'purchase' | 'exchange_gold' | 'exchange_silver' | 'gacha';
@@ -254,6 +249,10 @@ const popupStyles = StyleSheet.create({
 export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) {
     const palette = usePalette();
 
+    const [showChest, setShowChest] = useState(false);
+    const [gachaReward, setGachaReward] = useState<GachaReward | null>(null);
+    const [isOpeningChest, setIsOpeningChest] = useState(false);
+
     const [silverToGoldInput, setSilverToGoldInput] = useState(10);
     const [goldToSilverInput, setGoldToSilverInput] = useState(10);
     const [showGachaInfo, setShowGachaInfo] = useState(false);
@@ -324,7 +323,8 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
 
     const handleSilverToGold = () => {
         const fee = Math.ceil(silverToGoldInput / silverPerGoldRate * networkFee);
-        onPurchase('gold', silverToGoldResult, Math.floor(silverToGoldResult * silverPerGoldRate));
+        // Keep persisted transaction aligned with popup details: spend the exact slider input.
+        onPurchase('gold', silverToGoldResult, silverToGoldInput);
         showPopup({
             type: 'exchange_gold', success: true,
             title: 'Konversi Berhasil', subtitle: 'Silver → Gold',
@@ -354,18 +354,25 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
         });
     };
 
-    const handleGacha = () => {
-        onGacha();
-        showPopup({
-            type: 'gacha', success: true,
-            title: 'Kuil Nasib', subtitle: 'Berkah Peradaban',
-            icon: 'sparkles', accentColor: '#8B5CF6', bgColor: 'rgba(139,92,246,0.12)',
-            details: [
-                { label: 'Gold Dikorbankan', value: `-100 G`, color: '#EF4444' },
-                { label: 'Status', value: 'Sedang diproses...', color: '#8B5CF6' },
-                { label: 'Semoga Beruntung', value: '🎲', color: '#FBBF24' },
-            ],
-        });
+    const handleGacha = async () => {
+        if (stats.gold < 100) return;
+
+        setShowChest(true);
+        setIsOpeningChest(true);
+
+        // Sumber reward tunggal: parent (shop.tsx) yang menentukan dan menyimpan hasil gacha.
+        const rewardFromParent = await onGacha();
+
+        if (!rewardFromParent) {
+            setIsOpeningChest(false);
+            setShowChest(false);
+            return;
+        }
+
+        setTimeout(() => {
+            setGachaReward(rewardFromParent);
+            setIsOpeningChest(false);
+        }, 1500);
     };
 
     // ─── Derived styles (nilai-nilai yang bergantung pada palette) ──────────────
@@ -388,6 +395,16 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
     return (
         <>
             <TransactionPopup result={popupResult} visible={popupVisible} onClose={() => setPopupVisible(false)} palette={palette} />
+
+            <GachaChestModal
+                visible={showChest}
+                onClose={() => {
+                    setShowChest(false);
+                    setGachaReward(null);
+                }}
+                reward={gachaReward}
+                isOpening={isOpeningChest}
+            />
 
             <ScrollView
                 style={[styles.container, { backgroundColor: palette.bg }]}
