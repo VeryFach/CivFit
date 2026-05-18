@@ -1,29 +1,29 @@
 import { GachaReward } from '@/components/common/GachaChestModal';
-import StoreTab from '@/features/store/store'; // import komponen StoreTab yang sudah Anda buat
+import StoreTab from '@/features/store/store'; // import StoreTab component
 import { useCivStore } from '@/store';
 import { Coins, Heart, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
 export default function ShopTab() {
-    // Ambil data dan fungsi dari store
+    // Get data and functions from the store
     const stats = useCivStore((state) => state.stats);
     const setStats = useCivStore((state) => state.setStats);
     const addLog = useCivStore((state) => state.addLog);
     
-    // State untuk overlay (jika diperlukan)
+    // State for overlay (if needed)
     // const setGachaReward = useCivStore((state) => state.setGachaReward);
     // const setConversionStatus = useCivStore((state) => state.setConversionStatus);
 
-    // Handler untuk pembelian (mirip dengan logika di App.tsx asli)
+    // Purchase handler (similar to original App.tsx logic)
     const handlePurchase = (
         type: 'hp' | 'silver' | 'gold' | 'skipTicket',
         amount: number,
         cost: number
     ) => {
-        if (type === 'hp') {
+            if (type === 'hp') {
             if (stats.gold < cost) {
-                // Tampilkan notifikasi gagal (bisa lewat store untuk overlay)
+                // Show failure notification (can use store overlay)
                 return;
             }
             setStats({
@@ -62,7 +62,7 @@ export default function ShopTab() {
         }
     };
 
-    // Handler untuk Gacha
+    // Gacha handler
     const handleGacha = async (): Promise<GachaReward | void> => {
         if (stats.gold < 100) return;
 
@@ -78,7 +78,7 @@ export default function ShopTab() {
                 icon: <Coins size={40} color="#FBBF24" />,
                 color: '#FBBF24',
             };
-            rewardMessage = 'JACKPOT! Dewa memberkatimu.';
+            rewardMessage = 'JACKPOT! Incredible luck!';
         } else if (rand > 0.7) {
             reward = {
                 type: 'silver',
@@ -87,7 +87,7 @@ export default function ShopTab() {
                 icon: <Coins size={40} color="#14B8A6" />,
                 color: '#14B8A6',
             };
-            rewardMessage = 'Kekayaan kota meningkat.';
+            rewardMessage = "The city's wealth increases.";
         } else if (rand > 0.4) {
             reward = {
                 type: 'exp',
@@ -96,7 +96,7 @@ export default function ShopTab() {
                 icon: <Sparkles size={40} color="#A855F7" />,
                 color: '#A855F7',
             };
-            rewardMessage = 'Hikmat dan ilmu pengetahuan.';
+            rewardMessage = 'Wisdom and knowledge.';
         } else {
             reward = {
                 type: 'hp',
@@ -105,7 +105,7 @@ export default function ShopTab() {
                 icon: <Heart size={40} color="#EF4444" />,
                 color: '#EF4444',
             };
-            rewardMessage = 'Berkat kesehatan.';
+            rewardMessage = 'A blessing of health.';
         }
 
         // Apply cost + reward in one atomic update so persisted stats stay consistent.
@@ -121,7 +121,7 @@ export default function ShopTab() {
         await addLog('economy', `Gacha: ${rewardMessage}`, reward.amount, reward.type);
         return reward;
         
-        // Jika ingin menampilkan popup reward, set state overlay di store
+        // If you want to display a reward popup, set overlay state in the store
         // setGachaReward(reward);
     };
 
@@ -140,6 +140,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingTop: 80, // sesuaikan dengan layout header Anda
+        paddingTop: 80, // adjust to match your header layout
     },
 });

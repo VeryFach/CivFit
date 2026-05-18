@@ -6,10 +6,12 @@ import { useDebounce } from '@/hooks/useDebounce';
 import * as LucideIcons from 'lucide-react-native';
 import {
     AlertTriangle,
+    BadgeAlert,
     Coins,
     Dna,
     Ham,
     Hammer,
+    Heart,
     Home,
     Landmark,
     Navigation,
@@ -18,8 +20,6 @@ import {
     Trash2,
     TrendingUp,
     UsersRound,
-    Heart,
-    BadgeAlert,
     X,
 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -42,13 +42,13 @@ const IconRenderer = ({ name, size = 24, color = '#000' }: { name: string; size?
     return <Icon size={size} color={color} />;
 };
 
-// Utility untuk menghitung biaya scaling
+// Utility to calculate scaled costs
 const getScaledCost = (baseCost: number, totalBuildings: number): number => {
     const scalar = 1 + totalBuildings * 0.05;
     return Math.floor(baseCost * scalar);
 };
 
-// Komponen loading skeleton untuk grid
+// Loading skeleton component for the grid
 const GridSkeleton = ({ size, count, palette }: { size: number; count: number; palette: any }) => (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {Array.from({ length: count }).map((_, i) => (
@@ -116,7 +116,7 @@ interface CityTabProps {
     city: CityState;
     buildings: PlacedBuilding[];
     stats: UserStats;
-    // SAMAKAN URUTANNYA DENGAN STORE: ID, Cost, X, Y
+    // Match order with store: id, cost, x, y
     onDeploy: (buildingId: string, cost: number, x: number, y: number) => void;
     onUpgrade: (buildingId: string, cost: number) => void;
     onRemove: (buildingId: string) => void;
@@ -148,7 +148,7 @@ export default function CityTab({
     const availableWidth = screenWidth - 32 - (GRID_PADDING * 2);
     const GRID_ITEM_SIZE = availableWidth / GRID_SIZE;
 
-    // Mapping koordinat ke building
+    // Map coordinates to building
     const buildingMap = useMemo(() => {
         const map: Record<string, PlacedBuilding> = {};
         buildings.forEach(b => {
@@ -165,7 +165,7 @@ export default function CityTab({
 
     const resourceIconSize = Math.max(14, screenWidth * 0.035);
 
-    // Filter dan scaling bangunan
+    // Filter and scale buildings
     const filteredBuildings = useMemo(() => {
         const totalBuildings = buildings?.length || 0; // Beri pengaman
 
@@ -183,7 +183,7 @@ export default function CityTab({
         }));
     }, [stats?.level, filter, debouncedSearchQuery, buildings?.length]);
 
-    // Handler tile click
+    // Tile click handler
     const handleTileClick = useCallback((x: number, y: number) => {
         if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
             console.error(`Blocked invalid click at: ${x}_${y}`);
@@ -192,9 +192,9 @@ export default function CityTab({
         const coordKey = `${x}_${y}`;
         const building = buildingMap[coordKey];
 
-        if (selectedBuildingType) {
+            if (selectedBuildingType) {
             if (!building && stats.silver >= selectedBuildingType.costSilver) {
-                // SAMAKAN URUTANNYA: ID, Cost, X, Y
+                // Match order: id, cost, x, y
                 onDeploy(selectedBuildingType.id, selectedBuildingType.costSilver, x, y);
                 setSelectedBuildingType(null);
             }
@@ -286,7 +286,7 @@ export default function CityTab({
         );
     };
 
-    // Ukuran font responsif
+    // Responsive font sizes
     const titleFontSize = Math.min(32, screenWidth * 0.08);
     const resourceValueFont = Math.min(24, screenWidth * 0.06);
     const smallCapsFont = Math.max(8, screenWidth * 0.022);
@@ -388,8 +388,8 @@ export default function CityTab({
                                 <AlertTriangle size={24} color={palette.accentRed} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', color: '#FFF' }}>Krisis Terdeteksi!</Text>
-                                <Text style={{ fontSize: 10, fontWeight: 'bold', opacity: 0.9, color: '#FFF' }}>{summary.isHungry && 'Kekurangan Pangan. '}{summary.isHomeless && 'Krisis Tempat Tinggal.'} Segera bangun infrastruktur tambahan!</Text>
+                                <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', color: '#FFF' }}>Crisis Detected!</Text>
+                                <Text style={{ fontSize: 10, fontWeight: 'bold', opacity: 0.9, color: '#FFF' }}>{summary.isHungry && 'Food shortage. '}{summary.isHomeless && 'Housing crisis. '}Build additional infrastructure immediately!</Text>
                             </View>
                         </View>
                     )}
@@ -422,13 +422,13 @@ export default function CityTab({
                     <View style={[styles.sectionHeader, { flexWrap: 'wrap', gap: 12 }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <Hammer size={20} color={palette.text} />
-                            <Text style={{ fontSize: 20, fontWeight: '900', fontStyle: 'italic', color: palette.text }}>Konstruksi Kota</Text>
+                            <Text style={{ fontSize: 20, fontWeight: '900', fontStyle: 'italic', color: palette.text }}>Construction Hub</Text>
                         </View>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                             <View style={{ position: 'relative', flex: 1, minWidth: 150 }}>
                                 <Search size={14} style={{ position: 'absolute', left: 8, top: 10, zIndex: 1 }} color={palette.textMuted} />
                                 <TextInput
-                                    placeholder="Cari Bangunan..."
+                                    placeholder="Search buildings..."
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
                                     style={[styles.searchInput, { paddingLeft: 32, minWidth: 120, backgroundColor: palette.card, borderColor: palette.border, color: palette.text }]}

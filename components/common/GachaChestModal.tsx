@@ -397,7 +397,7 @@ export default function GachaChestModal({
                 <View style={[styles.rewardChip, { backgroundColor: activeReward.color + '20', borderColor: activeReward.color + '50' }]}>
                     <Sparkles size={12} color={activeReward.color} />
                     <Text style={[styles.rewardChipText, { color: activeReward.color }]}>
-                        HADIAH DITEMUKAN
+                        You found a reward!
                     </Text>
                     <Sparkles size={12} color={activeReward.color} />
                 </View>
@@ -414,11 +414,11 @@ export default function GachaChestModal({
                 {isGoldReward && netGoldChange !== null && (
                     <View style={styles.netInfoBox}>
                         <View style={styles.netInfoRow}>
-                            <Text style={styles.netInfoLabel}>Biaya gacha</Text>
+                            <Text style={styles.netInfoLabel}>Gacha cost</Text>
                             <Text style={styles.netInfoNegative}>- {GACHA_COST_GOLD} Gold</Text>
                         </View>
                         <View style={styles.netInfoRow}>
-                            <Text style={styles.netInfoLabel}>Perubahan net</Text>
+                            <Text style={styles.netInfoLabel}>Net change</Text>
                             <Text style={[styles.netInfoNet, { color: netGoldChange >= 0 ? '#16A34A' : '#DC2626' }]}>
                                 {netGoldChange >= 0 ? '+ ' : '- '}
                                 {Math.abs(netGoldChange).toLocaleString()} Gold
@@ -440,7 +440,7 @@ export default function GachaChestModal({
                 >
                     <View style={styles.collectButtonInner}>
                         <Zap size={16} color="#1E293B" strokeWidth={2.5} />
-                        <Text style={styles.collectButtonText}>Kumpulkan</Text>
+                        <Text style={styles.collectButtonText}>Collect</Text>
                         <Zap size={16} color="#1E293B" strokeWidth={2.5} />
                     </View>
                     <View style={styles.buttonHighlight} />
@@ -660,7 +660,7 @@ export default function GachaChestModal({
                 {isLoading && (
                     <View style={styles.loadingContainer}>
                         <Zap size={14} color="#FDE047" />
-                        <Text style={styles.loadingText}>  Membuka peti...</Text>
+                        <Text style={styles.loadingText}>  Opening chest...</Text>
                     </View>
                 )}
 

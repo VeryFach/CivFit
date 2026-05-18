@@ -38,57 +38,57 @@ export type ShopItemCard = {
 
 export const highlightCards: HighlightCard[] = [
   {
-    label: 'Mode',
+    label: 'Navigation',
     value: 'Expo Router',
-    note: 'Struktur file-based navigation',
+    note: 'File-based navigation structure',
     accent: 'blue',
   },
   {
     label: 'State',
     value: 'CivFit Core',
-    note: 'Habit, city, shop, dan log',
+    note: 'Habits, city, shop, and logs',
     accent: 'amber',
   },
   {
     label: 'Target',
     value: 'Mobile-first',
-    note: 'Siap dipakai di Android dan iOS',
+    note: 'Ready for Android and iOS',
     accent: 'mint',
   },
   {
     label: 'Scope',
     value: 'Web to App',
-    note: 'Menerjemahkan alur web ke shell aplikasi',
+    note: 'Translating web flows into a native app shell',
     accent: 'rose',
   },
 ];
 
 export const featureRoutes: FeatureRoute[] = [
   {
-    title: 'Realita',
+    title: 'Reality',
     href: '/',
-    description: 'Ringkasan status, kebiasaan, dan progres harian.',
+    description: 'Summary of status, habits, and daily progress.',
     badge: 'Home',
     icon: 'home-outline',
   },
   {
-    title: 'Kota',
+    title: 'City',
     href: '/city',
-    description: 'Populasi, bangunan, kesehatan, dan kebahagiaan.',
+    description: 'Population, buildings, health, and happiness.',
     badge: 'City',
     icon: 'business-outline',
   },
   {
-    title: 'Toko',
+    title: 'Shop',
     href: '/shop',
-    description: 'Item pemulihan, gacha, dan penguat progres.',
+    description: 'Recovery items, gacha, and progress boosters.',
     badge: 'Shop',
     icon: 'bag-handle-outline',
   },
   {
     title: 'Menu',
     href: '/menu',
-    description: 'Arsitektur aplikasi, sinkronisasi, dan langkah berikutnya.',
+    description: 'App architecture, synchronization, and next steps.',
     badge: 'Menu',
     icon: 'settings-outline',
   },
@@ -97,25 +97,25 @@ export const featureRoutes: FeatureRoute[] = [
 export const citySystems: CitySystemCard[] = [
   {
     title: 'Population Engine',
-    description: 'Menyusun pertumbuhan penduduk dari housing, food, dan health.',
+    description: 'Calculate population growth from housing, food, and health.',
     badge: 'City core',
     icon: 'people-outline',
   },
   {
     title: 'Building Grid',
-    description: 'Menata bangunan berdasarkan era dan biaya sumber daya.',
+    description: 'Arrange buildings by era and resource costs.',
     badge: 'Layout',
     icon: 'grid-outline',
   },
   {
     title: 'Daily Report',
-    description: 'Ringkasan hasil harian untuk habit completion dan city effects.',
+    description: 'Daily summary for habit completion and city effects.',
     badge: 'Report',
     icon: 'document-text-outline',
   },
   {
     title: 'Evolution Path',
-    description: 'Cabang perkembangan yang terbuka seiring level dan milestone.',
+    description: 'Evolution branches unlocked by level and milestones.',
     badge: 'Progress',
     icon: 'trending-up-outline',
   },
@@ -146,22 +146,22 @@ export const shopItems: ShopItemCard[] = [
   {
     name: 'Skip Ticket',
     cost: '1500 Gold',
-    effect: 'Proteksi satu hari',
+    effect: 'One-day protection',
     badge: 'Safety net',
     icon: 'time-outline',
   },
 ];
 
 export const menuNotes = [
-  'Pisahkan feature layer dari route layer supaya navigasi mudah dikembangkan.',
-  'Gunakan satu sumber data domain untuk memetakan fitur web ke versi mobile.',
-  'Simpan auth dan Firestore di service layer jika nanti sinkronisasi diaktifkan.',
-  'Tetap jaga route Expo kecil, fokus pada komposisi komponen bersama.',
+  'Separate feature layers from route layers to keep navigation extensible.',
+  'Use a single domain data source to map web features to mobile.',
+  'Keep auth and Firestore in the service layer for future sync.',
+  'Keep Expo routes minimal; focus on composing shared components.',
 ];
 
 export const appChecklist = [
-  'Tab bar dibuat khusus untuk empat area utama CivFit.',
-  'Komponen kartu dipusatkan agar tampilan konsisten di seluruh layar.',
-  'Data domain ditaruh terpisah dari route supaya mudah dipindah ke state nyata.',
-  'Struktur ini siap dipakai untuk menambahkan login, sync, dan dashboard lanjutan.',
+  'Dedicated tab bar for CivFit’s four main areas.',
+  'Centralized card components for consistent layout across screens.',
+  'Domain data separated from routes for easy migration to real state.',
+  'Structure ready for adding login, sync, and advanced dashboards.',
 ];

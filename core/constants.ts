@@ -5,14 +5,14 @@ export const ERAS_CONFIG = [
     id: Era.STONE_AGE,
     minLevel: 1,
     name: 'Stone Age',
-    description: 'Awal mula kemanusiaan. Fokus pada bertahan hidup dan pengumpulan dasar.',
+    description: 'The dawn of humanity. Focused on survival and basic gathering.',
     unlocks: ['nomadic', 'agrarian']
   },
   {
     id: Era.MEDIEVAL,
     minLevel: 5,
     name: 'Medieval',
-    description: 'Zaman keemasan kerajaan dan ksatria.',
+    description: 'An age of kingdoms and knights.',
     unlocks: ['feudal', 'mercantile']
   },
   { id: Era.INDUSTRIAL, minLevel: 15, name: 'Industrial' },
@@ -23,81 +23,81 @@ export const ERAS_CONFIG = [
 export const EVOLUTION_BRANCHES: EvolutionBranch[] = [
   {
     id: 'nomadic',
-    name: 'Suku Nomadik',
-    description: 'Berpindah-pindah mengikuti sumber daya. Fokus pada mobilitas.',
+    name: 'Nomadic Tribe',
+    description: 'Move with available resources; focused on mobility.',
     era: Era.STONE_AGE,
     requirements: [
-      { type: 'level', target: 2, description: 'Mencapai Level 2' },
-      { type: 'buildings', target: 'house', description: 'Memiliki 2 Simple House' }
+      { type: 'level', target: 2, description: 'Reach Level 2' },
+      { type: 'buildings', target: 'house', description: 'Own 2 Simple Houses' }
     ],
-    benefits: ['Bonus Silver dari eksplorasi', 'Biaya bangunan -10%'],
+    benefits: ['+Silver from exploration', 'Building costs -10%'],
     iconName: 'Tent'
   },
   {
     id: 'agrarian',
-    name: 'Masyarakat Agraris',
-    description: 'Menetap dan bercocok tanam. Fokus pada pertumbuhan populasi.',
+    name: 'Agrarian Society',
+    description: 'Settle and farm; focused on population growth.',
     era: Era.STONE_AGE,
     requirements: [
-      { type: 'level', target: 3, description: 'Mencapai Level 3' },
-      { type: 'buildings', target: 'farm', description: 'Memiliki 3 Communal Farm' }
+      { type: 'level', target: 3, description: 'Reach Level 3' },
+      { type: 'buildings', target: 'farm', description: 'Own 3 Communal Farms' }
     ],
-    benefits: ['Bonus Food Production +20%', 'Kesehatan penduduk +5%'],
+    benefits: ['+20% Food Production', '+5% Population Health'],
     iconName: 'Wheat'
   },
   {
     id: 'feudal',
-    name: 'Sistem Feodal',
-    description: 'Hierarki ketaatan dan perlindungan.',
+    name: 'Feudal System',
+    description: 'A hierarchy of loyalty and protection.',
     era: Era.MEDIEVAL,
     requirements: [
-      { type: 'level', target: 8, description: 'Mencapai Level 8' }
+      { type: 'level', target: 8, description: 'Reach Level 8' }
     ],
-    benefits: ['Pajak harian +15%', 'Pertahanan kota meningkat'],
+    benefits: ['+15% Daily Taxes', 'Increased city defenses'],
     iconName: 'Shield'
   },
   {
     id: 'mercantile',
-    name: 'Serikat Dagang',
-    description: 'Fokus pada perdagangan dan akumulasi emas.',
+    name: 'Merchant Guild',
+    description: 'Focused on trade and wealth accumulation.',
     era: Era.MEDIEVAL,
     requirements: [
-      { type: 'level', target: 12, description: 'Mencapai Level 12' }
+      { type: 'level', target: 12, description: 'Reach Level 12' }
     ],
-    benefits: ['Diskon Toko 10%', 'Bonus Silver dari Gacha +50%'],
+    benefits: ['10% Shop Discount', '+50% Silver from Gacha'],
     iconName: 'Coins'
   },
   {
     id: 'industrialist',
-    name: 'Revolusi Industri',
-    description: 'Produksi massal dan efisiensi mekanis.',
+    name: 'Industrial Revolution',
+    description: 'Mass production and mechanical efficiency.',
     era: Era.INDUSTRIAL,
     requirements: [
-      { type: 'level', target: 20, description: 'Mencapai Level 20' }
+      { type: 'level', target: 20, description: 'Reach Level 20' }
     ],
-    benefits: ['Biaya Upgrade -20%', 'Produksi Pangan +30%'],
+    benefits: ['Upgrade costs -20%', '+30% Food Production'],
     iconName: 'Factory'
   },
   {
     id: 'modernist',
-    name: 'Visi Global',
-    description: 'Konektivitas dan inovasi perkotaan.',
+    name: 'Global Vision',
+    description: 'Connectivity and urban innovation.',
     era: Era.MODERN,
     requirements: [
-      { type: 'level', target: 35, description: 'Mencapai Level 35' }
+      { type: 'level', target: 35, description: 'Reach Level 35' }
     ],
-    benefits: ['Kebahagiaan Warga +15%', 'Bonus Momentum +25%'],
+    benefits: ['+15% Citizen Happiness', '+25% Momentum Bonus'],
     iconName: 'Globe'
   },
   {
     id: 'cybernetic',
-    name: 'Singularitas Digital',
-    description: 'Integrasi penuh antara biologi dan teknologi.',
+    name: 'Digital Singularity',
+    description: 'Full integration of biology and technology.',
     era: Era.DIGITAL,
     requirements: [
-      { type: 'level', target: 60, description: 'Mencapai Level 60' }
+      { type: 'level', target: 60, description: 'Reach Level 60' }
     ],
-    benefits: ['Pertumbuhan Populasi +50%', 'Imunitas terhadap Penyakit'],
+    benefits: ['+50% Population Growth', 'Immunity to diseases'],
     iconName: 'Cpu'
   }
 ];
@@ -116,7 +116,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 0,
     healthBonus: 0,
     happinessBonus: 2,
-    description: 'Tempat tinggal dasar untuk penduduk baru.',
+    description: 'Basic housing for new residents.',
     iconName: 'Home'
   },
   {
@@ -131,7 +131,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 0,
     healthBonus: 1,
     happinessBonus: 0,
-    description: 'Sumber makanan utama untuk koloni.',
+    description: 'Primary food source for the colony.',
     iconName: 'Wheat'
   },
   // MEDIEVAL / MID
@@ -147,7 +147,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 10,
     healthBonus: 0,
     happinessBonus: 5,
-    description: 'Menyediakan makanan berkualitas dan pemasukan kecil.',
+    description: 'Provides quality meals and modest income.',
     iconName: 'Utensils'
   },
   {
@@ -162,7 +162,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 80,
     healthBonus: -2,
     happinessBonus: -5,
-    description: 'Pusat penagihan pajak untuk kemakmuran kota.',
+    description: 'Tax collection center to support city prosperity.',
     iconName: 'Landmark'
   },
   // INDUSTRIAL & LATE
@@ -178,7 +178,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 150,
     healthBonus: 2,
     happinessBonus: 8,
-    description: 'Tempat berkumpul elit dengan profit tinggi.',
+    description: 'A premium gathering spot with high profits.',
     iconName: 'Coffee'
   },
   {
@@ -193,7 +193,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: -10,
     healthBonus: 15,
     happinessBonus: 5,
-    description: 'Pusat pengobatan untuk menekan angka kematian.',
+    description: 'Medical center to reduce fatalities.',
     iconName: 'Stethoscope'
   },
   {
@@ -208,7 +208,7 @@ export const BUILDINGS: BuildingType[] = [
     silverIncome: 0,
     healthBonus: -10,
     happinessBonus: -10,
-    description: 'Teknologi masa depan untuk ledakan populasi.',
+    description: 'Futuristic technology enabling rapid population growth.',
     iconName: 'Dna'
   }
 ];
@@ -226,10 +226,10 @@ export const DEFAULT_HP = 100;
 export const PASSIVE_INTERVAL = 60000; // 1 minute
 
 export const DISASTERS = [
-  { id: 'plague', name: 'Mysterious Plague', description: 'Wabah misterius menyerang. Kesehatan warga terancam!', impactType: 'health', severity: 15 },
-  { id: 'earthquake', name: 'Tremor of Gaia', description: 'Gempa bumi merusak infrastruktur kota.', impactType: 'building', severity: 5 },
-  { id: 'famine', name: 'Great Drought', description: 'Kekeringan panjang. Stok makanan menipis drastis.', impactType: 'happiness', severity: 10 },
-  { id: 'revolt', name: 'Citizen Unrest', description: 'Ketidakpuasan massal. Kebahagiaan menurun tajam.', impactType: 'happiness', severity: 20 },
+  { id: 'plague', name: 'Mysterious Plague', description: "A mysterious plague strikes. Citizens' health is at risk!", impactType: 'health', severity: 15 },
+  { id: 'earthquake', name: 'Tremor of Gaia', description: 'An earthquake damages city infrastructure.', impactType: 'building', severity: 5 },
+  { id: 'famine', name: 'Great Drought', description: 'A prolonged drought. Food supplies are severely depleted.', impactType: 'happiness', severity: 10 },
+  { id: 'revolt', name: 'Citizen Unrest', description: 'Widespread unrest. Happiness drops sharply.', impactType: 'happiness', severity: 20 },
 ];
 
 export const ERA_MILESTONES = [

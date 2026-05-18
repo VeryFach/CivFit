@@ -46,7 +46,7 @@ interface TransactionResult {
     bgColor: string;
 }
 
-// ─── Palette helper — semua warna dinamis dikumpulkan di sini ────────────────
+// ─── Palette helper — dynamic colors gathered here ─────────────────────────
 function usePalette() {
     const scheme = useColorScheme();
     const isDark = scheme === 'dark';
@@ -61,19 +61,19 @@ function usePalette() {
         // Borders
         border: isDark ? '#334155' : '#E2E8F0',
         borderMuted: isDark ? '#1E293B' : '#F1F5F9',
-        borderActive: isDark ? '#FBBF24' : '#1E293B',   // border untuk kartu aktif
+        borderActive: isDark ? '#FBBF24' : '#1E293B',   // border for active card
         // Text
         text: isDark ? '#F8FAFC' : '#1E293B',
         textMuted: isDark ? '#94A3B8' : '#64748B',
         textFaint: isDark ? 'rgba(248,250,252,0.4)' : 'rgba(30,41,59,0.4)',
-        // Warna aksen untuk recovery bonus
+        // Accent color for recovery bonus
         recoveryBonus: isDark ? '#5EEAD4' : '#0D9488',
-        // Tombol MAX di exchange card
+        // MAX button on exchange card
         maxBtnTextDark: isDark ? '#FDE047' : '#FBBF24',
         maxBtnTextLight: isDark ? '#5EEAD4' : '#14B8A6',
-        // Hasil fee pada kartu gelap (lebih kontras)
+        // Fee result on dark card (higher contrast)
         resultFeeDark: isDark ? 'rgba(248,250,252,0.8)' : 'rgba(0,0,0,0.7)',
-        // Exchange card dark (selalu kontras dengan latar belakang)
+        // Exchange card dark (always contrasts background)
         exchangeDarkBg: isDark ? '#0F172A' : '#1E293B',
         exchangeDarkBorder: isDark ? '#1E293B' : '#334155',
         exchangeDarkText: '#FFFFFF',
@@ -82,7 +82,7 @@ function usePalette() {
     };
 }
 
-// ─── Transaction Popup (tidak banyak berubah, hanya menerima palette) ─────────
+// ─── Transaction Popup (mostly unchanged, accepts palette) ────────────────
 function TransactionPopup({
     result,
     visible,
@@ -154,7 +154,7 @@ function TransactionPopup({
 
                     <View style={[popupStyles.statusBadge, { backgroundColor: result.success ? '#DCFCE7' : '#FEE2E2' }]}>
                         <Text style={[popupStyles.statusText, { color: result.success ? '#16A34A' : '#DC2626' }]}>
-                            {result.success ? '✓ TRANSAKSI BERHASIL' : '✗ TRANSAKSI GAGAL'}
+                                {result.success ? '✓ TRANSACTION SUCCESS' : '✗ TRANSACTION FAILED'}
                         </Text>
                     </View>
 
@@ -179,7 +179,7 @@ function TransactionPopup({
                         onPress={onClose}
                         activeOpacity={0.85}
                     >
-                        <Text style={popupStyles.closeButtonText}>TUTUP</Text>
+                            <Text style={popupStyles.closeButtonText}>CLOSE</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
@@ -294,28 +294,28 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
     const showPopup = (result: TransactionResult) => { setPopupResult(result); setPopupVisible(true); };
 
     const handleRecoveryPurchase = (item: typeof RECOVERY_ITEMS[number]) => {
-        if (item.id === 'skipTicket') {
+                if (item.id === 'skipTicket') {
             onPurchase('skipTicket', 1, item.costGold);
             showPopup({
                 type: 'purchase', success: true,
-                title: 'Skip Ticket', subtitle: 'Perlindungan Aktif',
+                title: 'Skip Ticket', subtitle: 'Protection Active',
                 icon: 'shield', accentColor: '#14B8A6', bgColor: 'rgba(20,184,166,0.12)',
                 details: [
                     { label: 'Item', value: item.name },
-                    { label: 'Efek', value: 'PROTECTION', color: '#14B8A6' },
-                    { label: 'Gold Dikeluarkan', value: `-${item.costGold} G`, color: '#EF4444' },
+                    { label: 'Effect', value: 'PROTECTION', color: '#14B8A6' },
+                    { label: 'Gold Spent', value: `-${item.costGold} G`, color: '#EF4444' },
                 ],
             });
         } else {
             onPurchase('hp', item.hpRestore, item.costGold);
             showPopup({
                 type: 'purchase', success: true,
-                title: item.name, subtitle: 'Pemulihan Berhasil',
+                title: item.name, subtitle: 'Recovery Successful',
                 icon: 'check', accentColor: '#EF4444', bgColor: 'rgba(239,68,68,0.12)',
                 details: [
                     { label: 'Item', value: item.name },
-                    { label: 'HP Dipulihkan', value: `+${item.hpRestore} HP`, color: '#22C55E' },
-                    { label: 'Gold Dikeluarkan', value: `-${item.costGold} G`, color: '#EF4444' },
+                    { label: 'HP Restored', value: `+${item.hpRestore} HP`, color: '#22C55E' },
+                    { label: 'Gold Spent', value: `-${item.costGold} G`, color: '#EF4444' },
                 ],
             });
         }
@@ -327,13 +327,13 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
         onPurchase('gold', silverToGoldResult, silverToGoldInput);
         showPopup({
             type: 'exchange_gold', success: true,
-            title: 'Konversi Berhasil', subtitle: 'Silver → Gold',
+            title: 'Conversion Successful', subtitle: 'Silver → Gold',
             icon: 'zap', accentColor: '#FBBF24', bgColor: 'rgba(251,191,36,0.12)',
             details: [
-                { label: 'Silver Digunakan', value: `-${silverToGoldInput} S`, color: '#EF4444' },
-                { label: 'Gold Diterima', value: `+${silverToGoldResult} G`, color: '#FBBF24' },
-                { label: 'Biaya Jaringan (5%)', value: `-${fee} G`, color: '#94A3B8' },
-                { label: 'Kurs', value: `${silverPerGoldRate}S : 1G` },
+                { label: 'Silver Spent', value: `-${silverToGoldInput} S`, color: '#EF4444' },
+                { label: 'Gold Received', value: `+${silverToGoldResult} G`, color: '#FBBF24' },
+                { label: 'Network Fee (5%)', value: `-${fee} G`, color: '#94A3B8' },
+                { label: 'Rate', value: `${silverPerGoldRate}S : 1G` },
             ],
         });
     };
@@ -343,13 +343,13 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
         onPurchase('silver', goldToSilverResult, goldToSilverInput);
         showPopup({
             type: 'exchange_silver', success: true,
-            title: 'Likuidasi Berhasil', subtitle: 'Gold → Silver',
+            title: 'Liquidation Successful', subtitle: 'Gold → Silver',
             icon: 'zap', accentColor: '#14B8A6', bgColor: 'rgba(20,184,166,0.12)',
             details: [
-                { label: 'Gold Digunakan', value: `-${goldToSilverInput} G`, color: '#EF4444' },
-                { label: 'Silver Diterima', value: `+${goldToSilverResult} S`, color: '#14B8A6' },
-                { label: 'Biaya Stabilitas (5%)', value: `-${fee} S`, color: '#94A3B8' },
-                { label: 'Kurs', value: `1G : ${goldToSilverRate}S` },
+                { label: 'Gold Spent', value: `-${goldToSilverInput} G`, color: '#EF4444' },
+                { label: 'Silver Received', value: `+${goldToSilverResult} S`, color: '#14B8A6' },
+                { label: 'Stability Fee (5%)', value: `-${fee} S`, color: '#94A3B8' },
+                { label: 'Rate', value: `1G : ${goldToSilverRate}S` },
             ],
         });
     };
@@ -465,7 +465,7 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
                         <View style={styles.exchangeHeader}>
                             <View>
                                 <Text style={styles.exchangeTitle}>Liquid Asset</Text>
-                                <Text style={[styles.exchangeSubtitle, { color: palette.exchangeDarkMuted }]}>Silver Kota → Gold Habit</Text>
+                                <Text style={[styles.exchangeSubtitle, { color: palette.exchangeDarkMuted }]}>City Silver → Habit Gold</Text>
                             </View>
                             <View style={styles.rateBadge}>
                                 <Text style={[styles.rateLabel, { color: palette.exchangeDarkMuted }]}>Market Rate</Text>
@@ -538,7 +538,7 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
                         <View style={styles.exchangeHeader}>
                             <View>
                                 <Text style={[styles.exchangeTitleLight, { color: '#14B8A6' }]}>Treasury Exchange</Text>
-                                <Text style={[styles.exchangeSubtitleLight, { color: palette.textMuted }]}>Gold Habit → Silver Kota</Text>
+                                <Text style={[styles.exchangeSubtitleLight, { color: palette.textMuted }]}>Habit Gold → City Silver</Text>
                             </View>
                             <View style={styles.rateBadge}>
                                 <Text style={[styles.rateLabel, { color: palette.textMuted }]}>Market Rate</Text>
@@ -612,7 +612,7 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
                     <View style={styles.gachaHeader}>
                         <View style={styles.gachaTitleContainer}>
                             <Sparkles size={32} color="#FBBF24" fill="#FBBF24" />
-                            <Text style={styles.gachaTitle}>Kuil Nasib</Text>
+                            <Text style={styles.gachaTitle}>Shrine of Fate</Text>
                         </View>
                         <TouchableOpacity style={styles.infoButton} onPress={toggleGachaInfo}>
                             <Info size={20} color="#FBBF24" />
@@ -661,7 +661,7 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
     );
 }
 
-// ─── Static StyleSheet (semua warna dinamis dikelola lewat palette dan inline styles) ─────
+// ─── Static StyleSheet (dynamic colors are managed via palette and inline styles) ─────
 const { width } = Dimensions.get('window');
 const recoveryCardWidth = (width - 32 - 16) / 2;
 
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     confirmButtonText: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: '#1E293B' },
     confirmButtonTextTeal: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: '#1E293B' },
 
-    // Gacha (selalu ungu, tidak perlu adaptasi)
+    // Gacha (always purple, no adaptation needed)
     gachaCard: {
         backgroundColor: '#8B5CF6', borderRadius: 40, padding: 24, marginBottom: 32,
         borderWidth: 2, borderColor: '#6D28D9',

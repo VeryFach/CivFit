@@ -15,10 +15,11 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
+    Text as RNText,
     ScrollView,
     StyleSheet,
-    Text,
     TextInput,
+    TextProps,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -82,6 +83,8 @@ export default function RealitaTab({
         ? activeHabits.filter(h => h.completedDates.includes(habitDayKey)).length / activeHabits.length
         : 0;
 
+    const normalizeHabitTitle = (value: string) => value.trim().replace(/\s+/g, ' ').toUpperCase();
+
     const momentumStatus =
         momentum >= 80 ? 'Unstoppable' :
             momentum >= 50 ? 'Steady' :
@@ -92,17 +95,30 @@ export default function RealitaTab({
             momentum >= 50 ? '#14B8A6' :
                 momentum >= 20 ? '#8B5CF6' : '#EF4444';
 
+    const Text = ({ style, ...rest }: TextProps) => (
+        <RNText
+            {...rest}
+            style={style}
+            allowFontScaling
+            maxFontSizeMultiplier={1.2}
+        />
+    );
+
     const handleAdd = () => {
-        if (newHabit.trim()) {
-            onAdd(newHabit, habitType);
+        const normalizedTitle = normalizeHabitTitle(newHabit);
+
+        if (normalizedTitle) {
+            onAdd(normalizedTitle, habitType);
             setNewHabit('');
             setIsAdding(false);
         }
     };
 
     const handleUpdate = () => {
-        if (editingHabit && newHabit.trim()) {
-            onUpdate(editingHabit.id, { title: newHabit, type: habitType });
+        const normalizedTitle = normalizeHabitTitle(newHabit);
+
+        if (editingHabit && normalizedTitle) {
+            onUpdate(editingHabit.id, { title: normalizedTitle, type: habitType });
             setEditingHabit(null);
             setNewHabit('');
         }
@@ -178,15 +194,15 @@ export default function RealitaTab({
         for (let i = 0; i < offset; i++) days.push(null);
         for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
-        const weekDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
         return (
             <View style={[styles.calendarCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
                 <View style={styles.calendarHeader}>
-                    <Text style={styles.calendarTitle}>History Dunia</Text>
+                    <Text style={styles.calendarTitle}>Activity History</Text>
                     <View style={styles.calendarMonthBadge}>
                         <Text style={styles.calendarMonthText}>
-                            {now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                            {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </Text>
                     </View>
                 </View>
@@ -282,9 +298,9 @@ export default function RealitaTab({
             >
                 <View style={styles.progressHeader}>
                     <View>
-                        <Text style={[styles.progressTitle, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>Realita Center</Text>
+                        <Text style={[styles.progressTitle, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>Reality Center</Text>
                         <Text style={[styles.progressDate, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>
-                            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </Text>
                     </View>
                     <View style={styles.viewToggle}>
@@ -376,7 +392,7 @@ export default function RealitaTab({
                     <View style={styles.habitsHeader}>
                         <View style={styles.habitsTitleWrapper}>
                             <Layers size={16} color="#14B8A6" />
-                            <Text style={styles.habitsTitle}>Inventory Habit</Text>
+                            <Text style={styles.habitsTitle}>Your Habits</Text>
                         </View>
                         <TouchableOpacity style={styles.addButton} onPress={() => openBottomSheet()}>
                             <Plus size={20} color="#1E293B" />
@@ -403,12 +419,12 @@ export default function RealitaTab({
                                 <View style={styles.emptyIcon}>
                                     <CalendarIcon size={32} color="#CBD5E1" />
                                 </View>
-                                <Text style={styles.emptyTitle}>Dunia Hampa?</Text>
+                                <Text style={styles.emptyTitle}>Nothing here?</Text>
                                 <Text style={styles.emptyDesc}>
-                                    Belum ada habit yang direncanakan.{'\n'}Mulai evolusi pertamamu!
+                                    No habits planned yet.{'\n'}Start your first evolution!
                                 </Text>
                                 <TouchableOpacity style={styles.emptyButton} onPress={() => openBottomSheet()}>
-                                    <Text style={styles.emptyButtonText}>Tambah Habit</Text>
+                                    <Text style={styles.emptyButtonText}>Add Habit</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
@@ -450,12 +466,11 @@ export default function RealitaTab({
                                         <View style={styles.habitInfo}>
                                             <View style={styles.habitTitleRow}>
                                                 <Text style={[
-                                                        styles.habitTitle,
-
-    isDarkMode &&
-    !isCompleted &&
-    !isEmergency &&
-    styles.habitTitleDark,
+                                                    styles.habitTitle,
+                                                    isDarkMode &&
+                                                    !isCompleted &&
+                                                    !isEmergency &&
+                                                    styles.habitTitleDark,
                                                     isCompleted && styles.habitTitleCompleted,
                                                     isEmergency && styles.habitTitleEmergency,
                                                 ]}>
@@ -493,7 +508,7 @@ export default function RealitaTab({
 
             <View style={styles.footer}>
                 <View style={styles.hpStatus}>
-                    <Text style={styles.hpLabel}>Status Survival</Text>
+                    <Text style={styles.hpLabel}>Survival Status</Text>
                     <View style={styles.hpBadge}>
                         <Text style={[styles.hpBadgeText, hp < 50 && styles.hpBadgeLow]}>
                             {hp < 50 ? 'LOW HP' : 'STABLE'}
@@ -501,7 +516,7 @@ export default function RealitaTab({
                     </View>
                 </View>
                 <TouchableOpacity style={styles.endDayButton} onPress={onEndDay}>
-                    <Text style={styles.endDayButtonText}>TIBA-TIBA TIDUR</Text>
+                    <Text style={styles.endDayButtonText}>SLEEP NOW</Text>
                 </TouchableOpacity>
             </View>
 
@@ -554,7 +569,7 @@ export default function RealitaTab({
                                     isDarkMode && styles.sheetTitleDark,
                                 ]}
                             >
-                                {editingHabit ? 'Modifikasi Evolusi' : 'Inisiasi Evolusi'}
+                                {editingHabit ? 'Edit Habit' : 'Create Habit'}
                             </Text>
                             <TouchableOpacity
                                 onPress={closeBottomSheet}
@@ -579,12 +594,17 @@ export default function RealitaTab({
                                 <Text style={[
                                     styles.inputLabel,
                                     isDarkMode && styles.inputLabelDark,
-                                ]}>Judul Habit</Text>
+                                ]}>Habit Title</Text>
                                 <TextInput
                                     autoFocus
                                     style={[styles.input, isDarkMode && styles.inputDark,]}
-                                    placeholder="Apa rencana besarmu?"
+                                    placeholder="What's your big plan?"
                                     placeholderTextColor="#CBD5E1"
+                                    allowFontScaling
+                                    maxFontSizeMultiplier={1.2}
+                                    autoCapitalize="characters"
+                                    autoCorrect={false}
+                                    spellCheck={false}
                                     value={newHabit}
                                     onChangeText={setNewHabit}
                                     onSubmitEditing={editingHabit ? handleUpdate : handleAdd}
@@ -593,7 +613,7 @@ export default function RealitaTab({
                             </View>
 
                             <View style={styles.typeGroup}>
-                                <Text style={styles.inputLabel}>Frekuensi Evolusi</Text>
+                                <Text style={styles.inputLabel}>Frequency</Text>
                                 <View style={styles.typeButtons}>
                                     {(['daily', 'weekly', 'monthly'] as HabitType[]).map(type => (
                                         <TouchableOpacity
@@ -623,7 +643,7 @@ export default function RealitaTab({
                                     onPress={editingHabit ? handleUpdate : handleAdd}
                                 >
                                     <Text style={styles.saveButtonText}>
-                                        {editingHabit ? 'SIMPAN PERUBAHAN' : 'MULAI EVOLUSI'}
+                                        {editingHabit ? 'SAVE CHANGES' : 'START EVOLUTION'}
                                     </Text>
                                 </TouchableOpacity>
 
@@ -638,13 +658,13 @@ export default function RealitaTab({
                                                         closeBottomSheet();
                                                     }}
                                                 >
-                                                    <Text style={styles.deleteConfirmText}>YA, HAPUS SEKARANG</Text>
+                                                    <Text style={styles.deleteConfirmText}>YES, DELETE NOW</Text>
                                                 </TouchableOpacity>
                                                 <TouchableOpacity
                                                     style={styles.deleteConfirmNo}
                                                     onPress={() => setDeletingHabitId(null)}
                                                 >
-                                                    <Text style={styles.deleteConfirmTextNo}>BATAL</Text>
+                                                    <Text style={styles.deleteConfirmTextNo}>CANCEL</Text>
                                                 </TouchableOpacity>
                                             </View>
                                         ) : (
@@ -653,7 +673,7 @@ export default function RealitaTab({
                                                 onPress={() => setDeletingHabitId(editingHabit.id)}
                                             >
                                                 <Trash2 size={14} color="#EF4444" />
-                                                <Text style={styles.deleteButtonText}>HAPUS PERMANEN</Text>
+                                                <Text style={styles.deleteButtonText}>DELETE PERMANENTLY</Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>
@@ -1143,8 +1163,8 @@ const styles = StyleSheet.create({
         color: '#1E293B',
     },
     habitTitleDark: {
-    color: '#F8FAFC',
-},
+        color: '#F8FAFC',
+    },
     habitTitleCompleted: {
         textDecorationLine: 'line-through',
         color: '#94A3B8',
@@ -1350,7 +1370,6 @@ const styles = StyleSheet.create({
     input: {
         fontSize: 24,
         fontWeight: '900',
-        textTransform: 'uppercase',
         borderBottomWidth: 4,
         borderBottomColor: '#14B8A6',
         paddingVertical: 12,

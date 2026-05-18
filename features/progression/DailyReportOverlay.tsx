@@ -1,28 +1,25 @@
-import React, { useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    ScrollView,
-    TouchableOpacity,
-    Animated,
-    Dimensions,
-    StyleSheet,
-} from 'react-native';
 import { DailyReport, UserStats } from '@/core/types';
 import {
-    CheckCircle2,
-    TrendingUp,
-    ChevronRight,
-    Zap,
-    Skull,
-    Heart,
-    Users,
-    Coins,
-    Sparkles,
-    ArrowUpRight,
     AlertTriangle,
+    ArrowUpRight,
+    Coins,
+    Heart,
+    Skull,
+    TrendingUp,
+    Users,
+    Zap
 } from 'lucide-react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface DailyReportOverlayProps {
     report: DailyReport;
@@ -87,8 +84,8 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                             <Animated.View style={styles.iconCircle}>
                                 <TrendingUp size={32} color="#1E293B" />
                             </Animated.View>
-                            <Text style={styles.title}>Morning Report</Text>
-                            <Text style={styles.subtitle}>Day {stats.dayCount} Evaluation</Text>
+                            <Text style={styles.title}>Daily Report</Text>
+                            <Text style={styles.subtitle}>Day {stats.dayCount} Summary</Text>
                         </View>
 
                         {/* Cards Section */}
@@ -100,7 +97,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                     <View style={styles.cardHeader}>
                                         <View style={styles.cardTitleRow}>
                                             <Zap size={12} color="#FBBF24" />
-                                            <Text style={styles.cardTitle}>Momentum Protocol</Text>
+                                            <Text style={styles.cardTitle}>Momentum</Text>
                                         </View>
                                         <Text
                                             style={[
@@ -113,9 +110,9 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                     </View>
                                     <View style={styles.momentumStats}>
                                         <Text style={styles.momentumPercentage}>{stats.momentum}%</Text>
-                                        <Text style={styles.momentumLabel}>Active Momentum</Text>
+                                        <Text style={styles.momentumLabel}>Current Momentum</Text>
                                     </View>
-                                    <Text style={styles.momentumMessage}>"{report.message}"</Text>
+                                    <Text style={styles.momentumMessage}>“{report.message}”</Text>
                                 </View>
                             </View>
 
@@ -128,14 +125,14 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                     <View style={styles.cardContent}>
                                         <View style={styles.eventHeader}>
                                             <AlertTriangle size={12} color="#EF4444" />
-                                            <Text style={styles.eventTitle}>Incident Report</Text>
+                                            <Text style={styles.eventTitle}>Incident</Text>
                                         </View>
                                         <Text style={styles.eventName}>{report.event.name}</Text>
                                         <Text style={styles.eventDesc}>{report.event.description}</Text>
                                         <View style={styles.eventImpact}>
                                             <Zap size={12} color="#EF4444" />
                                             <Text style={styles.eventImpactText}>
-                                                Impact: -{report.event.severity}% {report.event.impactType}
+                                                Impact: -{report.event.severity}% on {report.event.impactType}
                                             </Text>
                                         </View>
                                     </View>
@@ -145,7 +142,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                             {/* Real World Performance */}
                             <View style={styles.performanceCard}>
                                 <View style={styles.performanceHeader}>
-                                    <Text style={styles.sectionTitle}>Real World Impact</Text>
+                                    <Text style={styles.sectionTitle}>Real-World Impact</Text>
                                     <View style={styles.completionBadge}>
                                         <Text style={styles.completionText}>
                                             {report.habitsCompleted}/{report.habitsTotal} Completed
@@ -154,7 +151,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                 </View>
                                 <View style={styles.performanceStats}>
                                     <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Biometric Status</Text>
+                                        <Text style={styles.statLabel}>Health</Text>
                                         <View style={styles.statRow}>
                                             <View
                                                 style={[
@@ -179,7 +176,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                         </View>
                                     </View>
                                     <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Daily Earnings</Text>
+                                        <Text style={styles.statLabel}>Daily Income</Text>
                                         <View style={styles.statRow}>
                                             <View style={styles.statIconGold}>
                                                 <Coins size={16} color="#FBBF24" />
@@ -212,7 +209,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                                 <Users size={16} color="#14B8A6" />
                                             </View>
                                             <View>
-                                                <Text style={styles.simulationLabel}>Demographics</Text>
+                                                <Text style={styles.simulationLabel}>Population</Text>
                                                 <Text style={styles.simulationDesc}>Population Growth</Text>
                                             </View>
                                         </View>
@@ -228,14 +225,14 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                     {(report.sickChange !== 0 || (report.deathCount || 0) > 0) && (
                                         <View style={styles.sicknessCard}>
                                             <View style={styles.sicknessRow}>
-                                                <Text style={styles.sicknessLabel}>Sickness Delta</Text>
+                                                <Text style={styles.sicknessLabel}>Sickness Change</Text>
                                                 <Text style={styles.sicknessValue}>
                                                     {report.sickChange! > 0 ? '+' : ''}{report.sickChange} citizens
                                                 </Text>
                                             </View>
                                             {report.deathCount! > 0 && (
                                                 <View style={styles.sicknessRow}>
-                                                    <Text style={styles.sicknessLabel}>Fatalities</Text>
+                                                    <Text style={styles.sicknessLabel}>Deaths</Text>
                                                     <Text style={styles.sicknessValue}>-{report.deathCount} citizens</Text>
                                                 </View>
                                             )}
@@ -249,8 +246,8 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                                 <ArrowUpRight size={16} color="#FBBF24" />
                                             </View>
                                             <View>
-                                                <Text style={styles.simulationLabel}>Economic Flow</Text>
-                                                <Text style={styles.simulationDesc}>Treasury Collection</Text>
+                                                <Text style={styles.simulationLabel}>Economy</Text>
+                                                <Text style={styles.simulationDesc}>Treasury</Text>
                                             </View>
                                         </View>
                                         <View style={styles.simulationValueGold}>
@@ -266,8 +263,8 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
                                                 <Zap size={16} color="#8B5CF6" />
                                             </View>
                                             <View>
-                                                <Text style={styles.simulationLabel}>Evolution Data</Text>
-                                                <Text style={styles.simulationDesc}>Intellectual Progress</Text>
+                                                <Text style={styles.simulationLabel}>Evolution</Text>
+                                                <Text style={styles.simulationDesc}>Research Progress</Text>
                                             </View>
                                         </View>
                                         <View style={styles.simulationValuePurple}>
@@ -281,7 +278,7 @@ export default function DailyReportOverlay({ report, stats, onClose }: DailyRepo
 
                         {/* Close Button */}
                         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                            <Text style={styles.closeButtonText}>Begin New Cycle</Text>
+                            <Text style={styles.closeButtonText}>Start Next Day</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>

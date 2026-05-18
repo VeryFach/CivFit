@@ -1,5 +1,5 @@
-import { Modal, View, Text, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
 import { useEffect, useRef } from 'react';
+import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, View } from 'react-native';
 
 interface SleepAnimationProps {
     visible: boolean;
@@ -288,10 +288,10 @@ const SleepAnimation: React.FC<SleepAnimationProps> = ({ visible, onFinish }) =>
                     styles.textContainer,
                     { opacity: textOpacity, transform: [{ translateY: textSlide }] }
                 ]}>
-                    <Text style={styles.tagline}>SELAMAT BERISTIRAHAT</Text>
-                    <Text style={styles.mainText}>Menuju{'\n'}Pagi</Text>
+                    <Text style={styles.tagline}>GOOD NIGHT</Text>
+                    <Text style={styles.mainText}>See You{'\n'}In The Morning</Text>
                     <View style={styles.divider} />
-                    <Text style={styles.subText}>Mimpi yang indah menantimu ✦</Text>
+                    <Text style={styles.subText}>Sweet dreams await you ✦</Text>
                 </Animated.View>
 
                 {/* Bottom mist / gradient overlay hint */}
@@ -378,11 +378,11 @@ const styles = StyleSheet.create({
     },
     mainText: {
         color: '#EEF4FF',
-        fontSize: 52,
+        fontSize: 40,
         fontWeight: '900',
         fontStyle: 'italic',
         textAlign: 'center',
-        lineHeight: 56,
+        lineHeight: 52,
         letterSpacing: -1,
         textShadowColor: 'rgba(160, 200, 255, 0.4)',
         textShadowOffset: { width: 0, height: 0 },

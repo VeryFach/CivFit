@@ -159,12 +159,12 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                         </Text>
                                         {isCurrent && (
                                             <View style={[styles.currentBadge, { backgroundColor: palette.accent }]}>
-                                                <Text style={styles.currentBadgeText}>Aktif</Text>
+                                                <Text style={styles.currentBadgeText}>Active</Text>
                                             </View>
                                         )}
                                     </View>
                                     <Text style={[styles.eraSubtext, { color: palette.textMuted }]}>
-                                        {isUnlocked ? 'Terbuka' : `Butuh Level ${era.minLevel}`}
+                                        {isUnlocked ? 'Unlocked' : `Requires Level ${era.minLevel}`}
                                     </Text>
                                 </View>
                                 <ChevronRight size={20} color={isUnlocked ? palette.text : palette.textMuted} />
@@ -206,7 +206,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                             <View style={styles.modalHeader}>
                                 <View>
                                     <Text style={[styles.modalTitle, { color: palette.text }]}>{eraData.name}</Text>
-                                    <Text style={[styles.modalSubtitle, { color: palette.textMuted }]}>Cabang Peradaban</Text>
+                                    <Text style={[styles.modalSubtitle, { color: palette.textMuted }]}>Cultural Branches</Text>
                                 </View>
                                 <TouchableOpacity style={[styles.closeButton, { backgroundColor: palette.cardAlt, borderColor: palette.border }]} onPress={closeModal}>
                                     <X size={24} color={palette.text} />
@@ -216,7 +216,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                             <Text style={[styles.modalQuote, { color: palette.textMuted }]}>"{eraData.description}"</Text>
 
                             <View style={styles.branchesSection}>
-                                <Text style={[styles.sectionLabel, { color: palette.textFaint }]}>Jalur Evolusi Tersedia</Text>
+                                <Text style={[styles.sectionLabel, { color: palette.textFaint }]}>Available Evolution Paths</Text>
                                 <View style={styles.branchesGrid}>
                                     {branches.map(branch => {
                                         const Icon = (Icons as any)[branch.iconName] || Icons.Circle;
@@ -255,8 +255,8 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                                 <Target size={20} color="#1E293B" />
                                             </View>
                                             <View>
-                                                <Text style={[styles.detailName, { color: palette.accent }]}>{selectedBranchData.name}</Text>
-                                                <Text style={[styles.detailSub, { color: palette.textFaint }]}>Detail & Requirements</Text>
+                                                    <Text style={[styles.detailName, { color: palette.accent }]}>{selectedBranchData.name}</Text>
+                                                    <Text style={[styles.detailSub, { color: palette.textFaint }]}>Detail & Requirements</Text>
                                             </View>
                                         </View>
                                         {city.unlockedEvolutions?.includes(selectedBranchData.id) && (
@@ -271,7 +271,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                     <View style={styles.requirementsSection}>
                                         <View style={styles.sectionHeader}>
                                             <CheckSquare size={16} color={palette.accentGold} />
-                                            <Text style={[styles.requirementsLabel, { color: palette.accentGold }]}>Syarat Pembukaan</Text>
+                                            <Text style={[styles.requirementsLabel, { color: palette.accentGold }]}>Unlock Requirements</Text>
                                         </View>
                                         {selectedBranchData.requirements.map((req, idx) => {
                                             let isMet = false;
@@ -297,7 +297,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                     <View style={styles.benefitsSection}>
                                         <View style={styles.sectionHeader}>
                                             <Zap size={16} color={palette.accent} />
-                                            <Text style={[styles.benefitsLabel, { color: palette.accent }]}>Keuntungan Budaya</Text>
+                                            <Text style={[styles.benefitsLabel, { color: palette.accent }]}>Cultural Benefits</Text>
                                         </View>
                                         {selectedBranchData.benefits.map((benefit, idx) => (
                                             <View key={idx} style={styles.benefitRow}>
@@ -329,7 +329,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                             ) : (
                                                 <>
                                                     <Zap size={16} color="#1E293B" />
-                                                    <Text style={styles.unlockButtonText}>Mulai Evolusi</Text>
+                                                    <Text style={styles.unlockButtonText}>Start Evolution</Text>
                                                 </>
                                             )}
                                         </TouchableOpacity>
@@ -347,19 +347,19 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
         <ScrollView style={[styles.container, { backgroundColor: palette.bg }]} showsVerticalScrollIndicator={false}>
             <TouchableOpacity style={styles.backButton} onPress={onBack}>
                 <ArrowLeft size={16} color={palette.text} />
-                <Text style={[styles.backButtonText, { color: palette.text }]}>Kembali ke Kota</Text>
+                <Text style={[styles.backButtonText, { color: palette.text }]}>Back to City</Text>
             </TouchableOpacity>
 
             <View style={[styles.headerCard, { backgroundColor: palette.headerCardBg, borderColor: palette.headerCardBorder }]}>
                 <View style={styles.headerBackground}>
                     <GitBranch size={128} color="rgba(255,255,255,0.1)" />
                 </View>
-                <Text style={styles.headerTitle}>Pohon Evolusi</Text>
-                <Text style={[styles.headerSubtitle, { color: palette.accentGold }]}>Tentukan masa depan peradabanmu</Text>
+                <Text style={styles.headerTitle}>Evolution Tree</Text>
+                <Text style={[styles.headerSubtitle, { color: palette.accentGold }]}>Shape the future of your civilization</Text>
                 <View style={[styles.infoBox, { borderColor: palette.border, backgroundColor: 'rgba(255,255,255,0.1)' }]}>
                     <Info size={20} color={palette.accent} />
-                    <Text style={[styles.infoText, { color: '#FFFFFF' }]}>
-                        Pilihlah era untuk melihat jalur teknologi dan cabang kebudayaan yang tersedia.
+                        <Text style={[styles.infoText, { color: '#FFFFFF' }]}>
+                        Select an era to view available technology paths and cultural branches.
                     </Text>
                 </View>
             </View>

@@ -30,10 +30,11 @@ import {
     Dimensions,
     Image,
     Modal,
+    Text as RNText,
     ScrollView,
     StyleSheet,
     Switch,
-    Text,
+    TextProps,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -42,27 +43,27 @@ import { platformConfirm } from '../../platform/mobile/utils/interactions';
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = (width - 64) / 3;
 
-// Data FAQ (tidak berubah)
+// FAQ data (translated)
 const FAQ_DATA = [
     {
-        question: 'Apa itu CivFit?',
-        answer: 'CivFit adalah game simulasi peradaban yang menggabungkan kebugaran dengan pembangunan kota. Setiap langkahmu di dunia nyata menghasilkan sumber daya untuk kotamu.',
+        question: 'What is CivFit?',
+        answer: 'CivFit is a civilization simulation game that blends fitness with city-building. Your real-world activity generates resources for your city.',
     },
     {
-        question: 'Bagaimana cara mendapatkan Silver?',
-        answer: 'Silver diperoleh dari pajak warga, menyelesaikan misi harian, dan dari bangunan ekonomi seperti Market atau Bank.',
+        question: 'How do I earn Silver?',
+        answer: 'Silver is earned from citizen taxes, completing daily missions, and from economic buildings like Markets or Banks.',
     },
     {
-        question: 'Mengapa penduduk saya sakit?',
-        answer: 'Kesehatan kota menurun jika fasilitas kesehatan tidak mencukupi atau polusi tinggi. Bangun Rumah Sakit dan jaga kebersihan.',
+        question: 'Why is my population unhealthy?',
+        answer: 'City health drops if healthcare is insufficient or pollution is high. Build a Hospital and keep the city clean.',
     },
     {
-        question: 'Bagaimana cara naik era?',
-        answer: 'Kumpulkan cukup poin evolusi dengan meningkatkan populasi, kebahagiaan, dan produktivitas. Setelah memenuhi syarat, klik tombol "Evolusi" di tab Kota.',
+        question: 'How do I advance an era?',
+        answer: 'Collect evolution points by increasing population, happiness, and productivity. When you meet the requirements, use the "Evolve" action in the City tab.',
     },
     {
-        question: 'Apa fungsi notifikasi?',
-        answer: 'Notifikasi akan mengingatkan Anda tentang event penting, misi selesai, atau krisis kota. Anda bisa mengaktifkan/menonaktifkannya di menu Pengaturan.',
+        question: 'What do notifications do?',
+        answer: 'Notifications remind you about important events, completed missions, or city crises. You can enable or disable them in Settings.',
     },
 ];
 
@@ -107,6 +108,15 @@ export function MenuTab() {
 
     const todayLogs = logs.filter((log) => getLocalDateKey(log.timestamp) === todayKey);
 
+    const Text = ({ style, ...rest }: TextProps) => (
+        <RNText
+            {...rest}
+            style={style}
+            allowFontScaling
+            maxFontSizeMultiplier={1.2}
+        />
+    );
+
     // Style dinamis berdasarkan mode
     const dynamicStyles = useMemo(() => {
         const darkBackground = '#0F172A';
@@ -130,13 +140,13 @@ export function MenuTab() {
             tabBar: { flexDirection: 'row', backgroundColor: surfaceColor, borderRadius: 32, borderWidth: 2, borderColor: borderColor, shadowColor: '#000', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 6, marginBottom: 24, padding: 6 },
             tabButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, borderRadius: 24, backgroundColor: 'transparent' },
             tabButtonActive: { backgroundColor: '#1E293B', shadowColor: '#000', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.2, elevation: 2 },
-            tabLabel: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#94A3B8' },
+            tabLabel: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#94A3B8', textAlign: 'center', flexShrink: 1 },
             tabLabelActive: { color: '#FFF' },
             profileCard: { backgroundColor: surfaceColor, borderRadius: 40, padding: 24, borderWidth: 2, borderColor: borderColor, ...cardShadow, shadowOffset: { width: 4, height: 4 }, elevation: 6, alignItems: 'center', marginBottom: 24 },
             avatarContainer: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#F1F5F9', borderWidth: 2, borderColor: '#0F172A', justifyContent: 'center', alignItems: 'center', marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 4 },
             avatar: { width: '100%', height: '100%', resizeMode: 'cover' },
-            userName: { fontSize: 24, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: textColor, marginBottom: 4, textAlign: 'center' },
-            userLevel: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: subTextColor, marginBottom: 24 },
+            userName: { fontSize: 24, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: textColor, marginBottom: 4, textAlign: 'center', flexShrink: 1 },
+            userLevel: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: subTextColor, marginBottom: 24, textAlign: 'center', flexShrink: 1 },
             statsRow: { flexDirection: 'row', gap: 16, width: '100%' },
             statBox: { flex: 1, backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderWidth: 2, borderColor: '#0F172A', borderRadius: 24, padding: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
             statNumber: { fontSize: 20, fontWeight: '900', fontFamily: 'monospace', color: textColor },
@@ -151,7 +161,7 @@ export function MenuTab() {
             badgeIconContainer: { padding: 8, borderRadius: 16, borderWidth: 1, borderColor: '#0F172A', shadowColor: '#000', shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.1, elevation: 1 },
             badgeIconUnlocked: { backgroundColor: '#FBBF24' },
             badgeIconLocked: { backgroundColor: '#E2E8F0' },
-            badgeTitle: { fontSize: 8, fontWeight: '900', textTransform: 'uppercase', textAlign: 'center', color: textColor },
+            badgeTitle: { fontSize: 8, fontWeight: '900', textTransform: 'uppercase', textAlign: 'center', color: textColor, flexShrink: 1 },
             logsCard: { backgroundColor: surfaceColor, borderRadius: 40, padding: 20, borderWidth: 2, borderColor: borderColor, ...cardShadow, shadowOffset: { width: 4, height: 4 }, elevation: 6 },
             logsHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
             logsTitle: { fontSize: 20, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: textColor },
@@ -161,49 +171,49 @@ export function MenuTab() {
             logIconPositive: { backgroundColor: '#14B8A6' },
             logIconNegative: { backgroundColor: '#EF4444' },
             logContent: { flex: 1 },
-            logMessage: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', color: textColor, marginBottom: 6 },
+            logMessage: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', color: textColor, marginBottom: 6, flexShrink: 1 },
             logMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-            logTime: { fontSize: 8, fontWeight: '900', color: subTextColor, textTransform: 'uppercase' },
+            logTime: { fontSize: 8, fontWeight: '900', color: subTextColor, textTransform: 'uppercase', flexShrink: 1 },
             logChange: { fontSize: 8, fontWeight: '900', textTransform: 'uppercase' },
             logChangePositive: { color: '#14B8A6' },
             logChangeNegative: { color: '#EF4444' },
             emptyLogs: { alignItems: 'center', paddingVertical: 48 },
-            emptyLogsText: { fontSize: 10, fontWeight: '900', color: subTextColor, textTransform: 'uppercase' },
+            emptyLogsText: { fontSize: 10, fontWeight: '900', color: subTextColor, textTransform: 'uppercase', textAlign: 'center', flexShrink: 1 },
             settingsCard: { backgroundColor: '#1E293B', borderRadius: 40, padding: 24, borderWidth: 2, borderColor: '#334155', shadowColor: '#000', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.15, elevation: 8, marginBottom: 24 },
             settingsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
             settingsTitle: { fontSize: 20, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: '#14B8A6' },
             settingsOptions: { gap: 12 },
             settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
             settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-            settingText: { fontSize: 14, fontWeight: '900', textTransform: 'uppercase', color: '#FFF' },
-            settingValue: { fontSize: 10, fontWeight: '900', color: '#FBBF24' },
+            settingText: { fontSize: 14, fontWeight: '900', textTransform: 'uppercase', color: '#FFF', flexShrink: 1 },
+            settingValue: { fontSize: 10, fontWeight: '900', color: '#FBBF24', flexShrink: 1 },
             logoutButton: { backgroundColor: '#EF4444', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 20, borderRadius: 32, borderWidth: 2, borderColor: '#0F172A', shadowColor: '#000', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.2, elevation: 6 },
-            logoutText: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: '#FFF' },
+            logoutText: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: '#FFF', flexShrink: 1 },
             footer: { alignItems: 'center', paddingVertical: 20, marginTop: 16 },
-            footerVersion: { fontSize: 10, fontWeight: '900', color: subTextColor, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 6 },
-            footerMotto: { fontSize: 8, fontWeight: '700', fontStyle: 'italic', color: subTextColor, textTransform: 'uppercase' },
+            footerVersion: { fontSize: 10, fontWeight: '900', color: subTextColor, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 6, textAlign: 'center', flexShrink: 1 },
+            footerMotto: { fontSize: 8, fontWeight: '700', fontStyle: 'italic', color: subTextColor, textTransform: 'uppercase', textAlign: 'center', flexShrink: 1 },
             modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
             modalContainer: { backgroundColor: surfaceColor, borderRadius: 40, padding: 24, width: '80%', borderWidth: 2, borderColor: borderColor },
             modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-            modalTitle: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: textColor },
-            modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: borderColor },
-            modalOptionText: { fontSize: 16, fontWeight: '700', color: textColor },
+            modalTitle: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase', color: textColor, flexShrink: 1 },
+            modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: borderColor, gap: 12 },
+            modalOptionText: { fontSize: 16, fontWeight: '700', color: textColor, flexShrink: 1 },
             faqItem: { marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: borderColor },
-            faqQuestion: { fontSize: 14, fontWeight: '900', color: textColor, marginBottom: 8 },
-            faqAnswer: { fontSize: 12, color: subTextColor, lineHeight: 18 },
+            faqQuestion: { fontSize: 14, fontWeight: '900', color: textColor, marginBottom: 8, flexShrink: 1 },
+            faqAnswer: { fontSize: 12, color: subTextColor, lineHeight: 18, flexShrink: 1 },
         });
     }, [isDarkMode]);
 
     const badgeGallery = [
-        { title: 'Pionir Batu', icon: 'Mountain', unlocked: stats.level >= 1 },
-        { title: 'Ksatria Besi', icon: 'Shield', unlocked: stats.level >= 5 },
-        { title: 'Insinyur Uap', icon: 'Zap', unlocked: stats.level >= 15 },
-        { title: 'Warga Modern', icon: 'Smartphone', unlocked: stats.level >= 30 },
-        { title: 'Avatar Digital', icon: 'Cpu', unlocked: stats.level >= 50 },
+        { title: 'Stone Pioneer', icon: 'Mountain', unlocked: stats.level >= 1 },
+        { title: 'Iron Knight', icon: 'Shield', unlocked: stats.level >= 5 },
+        { title: 'Steam Engineer', icon: 'Zap', unlocked: stats.level >= 15 },
+        { title: 'Modern Citizen', icon: 'Smartphone', unlocked: stats.level >= 30 },
+        { title: 'Digital Avatar', icon: 'Cpu', unlocked: stats.level >= 50 },
     ];
 
     const handleLogout = async () => {
-        const confirm = await platformConfirm('Keluar dari peradaban Fitnismu?');
+        const confirm = await platformConfirm('Sign out of your CivFit account?');
         if (confirm) {
             await signOut(auth);
             router.replace('/(auth)/login');
@@ -241,18 +251,18 @@ export function MenuTab() {
                             <View style={stylesDynamic.statsRow}>
                                 <View style={stylesDynamic.statBox}>
                                     <Text style={stylesDynamic.statNumber}>{stats.dayCount}</Text>
-                                    <Text style={stylesDynamic.statLabel}>Hari Aktif</Text>
+                                    <Text style={stylesDynamic.statLabel}>Active Days</Text>
                                 </View>
                                 <View style={stylesDynamic.statBox}>
                                     <Text style={stylesDynamic.statNumber}>S{stats.level}</Text>
-                                    <Text style={stylesDynamic.statLabel}>Tier Kota</Text>
+                                    <Text style={stylesDynamic.statLabel}>City Tier</Text>
                                 </View>
                             </View>
                         </View>
                         <View style={stylesDynamic.badgeSection}>
                             <View style={stylesDynamic.sectionHeader}>
                                 <Award size={16} color="#94A3B8" />
-                                <Text style={stylesDynamic.sectionTitle}>Galeri Lencana</Text>
+                                <Text style={stylesDynamic.sectionTitle}>Badge Gallery</Text>
                             </View>
                             <View style={stylesDynamic.badgeGrid}>
                                 {badgeGallery.map((badge, idx) => (
@@ -274,7 +284,7 @@ export function MenuTab() {
                         <View style={stylesDynamic.logsCard}>
                             <View style={stylesDynamic.logsHeader}>
                                 <History size={24} color="#1E293B" />
-                                <Text style={stylesDynamic.logsTitle}>Log Hari Ini</Text>
+                                <Text style={stylesDynamic.logsTitle}>Today's Log</Text>
                             </View>
                             <ScrollView
                                 style={stylesDynamic.logsList}
@@ -303,7 +313,7 @@ export function MenuTab() {
                                     ))
                                 ) : (
                                     <View style={stylesDynamic.emptyLogs}>
-                                        <Text style={stylesDynamic.emptyLogsText}>Belum ada log hari ini...</Text>
+                                        <Text style={stylesDynamic.emptyLogsText}>No logs for today...</Text>
                                     </View>
                                 )}
                             </ScrollView>
@@ -323,7 +333,7 @@ export function MenuTab() {
                     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                         <View style={stylesDynamic.settingsCard}>
                             <View style={stylesDynamic.settingsHeader}>
-                                <Text style={stylesDynamic.settingsTitle}>Layanan Sektor</Text>
+                                <Text style={stylesDynamic.settingsTitle}>Services</Text>
                                 <ShieldCheck size={24} color="#14B8A6" />
                             </View>
                             <View style={stylesDynamic.settingsOptions}>
@@ -331,7 +341,7 @@ export function MenuTab() {
                                 <TouchableOpacity style={stylesDynamic.settingItem} onPress={() => setTimezoneModalVisible(true)}>
                                     <View style={stylesDynamic.settingLeft}>
                                         <Globe size={16} color="#14B8A6" />
-                                        <Text style={stylesDynamic.settingText}>Zona Waktu</Text>
+                                        <Text style={stylesDynamic.settingText}>Timezone</Text>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                         <Text style={stylesDynamic.settingValue}>{selectedTimezone}</Text>
@@ -343,7 +353,7 @@ export function MenuTab() {
                                 <View style={stylesDynamic.settingItem}>
                                     <View style={stylesDynamic.settingLeft}>
                                         <Bell size={16} color="#14B8A6" />
-                                        <Text style={stylesDynamic.settingText}>Notifikasi</Text>
+                                        <Text style={stylesDynamic.settingText}>Notifications</Text>
                                     </View>
                                     <Switch
                                         value={notificationEnabled}
@@ -357,7 +367,7 @@ export function MenuTab() {
                                 <View style={stylesDynamic.settingItem}>
                                     <View style={stylesDynamic.settingLeft}>
                                         {isDarkMode ? <Moon size={16} color="#14B8A6" /> : <Sun size={16} color="#14B8A6" />}
-                                        <Text style={stylesDynamic.settingText}>Mode Gelap</Text>
+                                        <Text style={stylesDynamic.settingText}>Dark Mode</Text>
                                     </View>
                                     <Switch
                                         value={isDarkMode}
@@ -371,7 +381,7 @@ export function MenuTab() {
                                 <TouchableOpacity style={stylesDynamic.settingItem} onPress={() => setFaqModalVisible(true)}>
                                     <View style={stylesDynamic.settingLeft}>
                                         <HelpCircle size={16} color="#14B8A6" />
-                                        <Text style={stylesDynamic.settingText}>Bantuan & FAQ</Text>
+                                        <Text style={stylesDynamic.settingText}>Help & FAQ</Text>
                                     </View>
                                     <ChevronRight size={16} color="#FFFFFF" />
                                 </TouchableOpacity>
@@ -380,7 +390,7 @@ export function MenuTab() {
 
                         <TouchableOpacity style={stylesDynamic.logoutButton} onPress={handleLogout}>
                             <LogOut size={20} color="#FFFFFF" />
-                            <Text style={stylesDynamic.logoutText}>Keluar Sesi</Text>
+                            <Text style={stylesDynamic.logoutText}>Sign Out</Text>
                         </TouchableOpacity>
 
                         {/* Modal Pilih Zona Waktu */}
@@ -388,7 +398,7 @@ export function MenuTab() {
                             <View style={stylesDynamic.modalOverlay}>
                                 <View style={stylesDynamic.modalContainer}>
                                     <View style={stylesDynamic.modalHeader}>
-                                        <Text style={stylesDynamic.modalTitle}>Pilih Zona Waktu</Text>
+                                        <Text style={stylesDynamic.modalTitle}>Select Timezone</Text>
                                         <TouchableOpacity onPress={() => setTimezoneModalVisible(false)}>
                                             <X size={24} color="#1E293B" />
                                         </TouchableOpacity>
@@ -415,7 +425,7 @@ export function MenuTab() {
                             <View style={stylesDynamic.modalOverlay}>
                                 <View style={[stylesDynamic.modalContainer, { maxHeight: '80%' }]}>
                                     <View style={stylesDynamic.modalHeader}>
-                                        <Text style={stylesDynamic.modalTitle}>Bantuan & FAQ</Text>
+                                        <Text style={stylesDynamic.modalTitle}>Help & FAQ</Text>
                                         <TouchableOpacity onPress={() => setFaqModalVisible(false)}>
                                             <X size={24} color={isDarkMode ? '#FFF' : '#1E293B'} />
                                         </TouchableOpacity>
@@ -447,10 +457,10 @@ export function MenuTab() {
         >
             <View style={dynamicStyles.tabBar}>
                 {[
-                    { id: 'profile', label: 'Profil', Icon: User },
-                    { id: 'logs', label: 'Log', Icon: History },
-                    { id: 'rank', label: 'Rank', Icon: Trophy },
-                    { id: 'settings', label: 'Opsi', Icon: Settings },
+                    { id: 'profile', label: 'Profile', Icon: User },
+                    { id: 'logs', label: 'Logs', Icon: History },
+                    { id: 'rank', label: 'Rankings', Icon: Trophy },
+                    { id: 'settings', label: 'Options', Icon: Settings },
                 ].map((tab) => {
                     const Icon = tab.Icon;
                     const isActive = activeSection === tab.id;
@@ -471,7 +481,7 @@ export function MenuTab() {
             {renderSection()}
             <View style={dynamicStyles.footer}>
                 <Text style={dynamicStyles.footerVersion}>CivFit v1.7.0 Cloud Sync</Text>
-                <Text style={dynamicStyles.footerMotto}>Build peradabanmu, bangun dirimu.</Text>
+                <Text style={dynamicStyles.footerMotto}>Build your civilization, build yourself.</Text>
             </View>
         </ScrollView>
     );

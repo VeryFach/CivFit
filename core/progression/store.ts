@@ -248,12 +248,12 @@ export const useCivStore = create<CivState>((set, get) => ({
                 unsubs.push(onSnapshot(buildingsRef, (snapshot) => {
                     const buildingsList = snapshot.docs.map(doc => {
                         console.log(
-  'RAW DOCS:',
-  snapshot.docs.map(d => ({
-    id: d.id,
-    data: d.data()
-  }))
-);
+                            'RAW DOCS:',
+                            snapshot.docs.map(d => ({
+                                id: d.id,
+                                data: d.data()
+                            }))
+                        );
                         const data = doc.data();
                         return {
                             id: doc.id,

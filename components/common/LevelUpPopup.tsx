@@ -134,13 +134,13 @@ export default function LevelUpPopup({ visible, level, levelUpCount, onClose }: 
 
                     <View style={styles.deltaBadge}>
                         <Sparkles size={12} color="#1E293B" />
-                        <Text style={styles.deltaText}>+{levelUpCount} LEVEL</Text>
+                        <Text style={styles.deltaText}>+{levelUpCount} LEVELS</Text>
                     </View>
 
-                    <Text style={styles.message}>Progress harianmu berhasil dorong evolusi karakter.</Text>
+                    <Text style={styles.message}>Your daily progress advanced your character.</Text>
 
                     <TouchableOpacity style={styles.button} onPress={onClose}>
-                        <Text style={styles.buttonText}>LANJUTKAN</Text>
+                        <Text style={styles.buttonText}>Continue</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
