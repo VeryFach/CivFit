@@ -618,7 +618,7 @@ export default function StoreTab({ stats, onPurchase, onGacha }: StoreTabProps) 
                             <Info size={20} color="#FBBF24" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.gachaSubtitle}>Sacrifice Gold for Civilization's Blessing</Text>
+                    <Text style={styles.gachaSubtitle}>Sacrifice Gold for Civilization Blessing</Text>
 
                     {showGachaInfo && (
                         <Animated.View style={[styles.gachaInfoPanel, { height: gachaInfoHeight }]}>

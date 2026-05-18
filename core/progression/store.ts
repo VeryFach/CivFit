@@ -15,13 +15,11 @@ import {
     writeBatch
 } from 'firebase/firestore';
 import { create } from 'zustand';
-import { DEFAULT_HP, ERAS_CONFIG, EVOLUTION_BRANCHES, EXP_PER_LEVEL, GRID_SIZE } from '../constants';
+import { checkStorageVersion } from '../../platform/storage/hydration';
+import { BUILDINGS, DEFAULT_HP, ERAS_CONFIG, EVOLUTION_BRANCHES, EXP_PER_LEVEL, GRID_SIZE } from '../constants';
+import { getScaledConstructionCost, isValidGridCoord } from '../simulation/cityUtils';
 import { ActivityLog, CityState, Era, Habit, HabitType, PlacedBuilding, UserStats } from '../types';
 import { DayReport, processEndDay } from './engine';
-
-type GachaRewardType = 'gold' | 'silver' | 'exp' | 'hp';
-type GachaReward = { type: GachaRewardType; amount: number; message: string } | null;
-type ConversionStatus = { show: boolean; success: boolean; message: string; type: 'gold' | 'silver' } | null;
 
 let unsubscribeAuthListener: (() => void) | null = null;
 let unsubscribeUserScopedListeners: (() => void) | null = null;
@@ -30,10 +28,6 @@ const isPermissionDeniedError = (error: unknown) => {
     if (!(error instanceof Error)) return false;
     const message = error.message.toLowerCase();
     return message.includes('missing or insufficient permissions') || message.includes('permission-denied');
-};
-
-const getLocalDateKey = (value: Date = new Date()) => {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
 };
 
 const getHabitDayKey = (dayCount: number) => `day-${dayCount}`;
@@ -98,7 +92,7 @@ interface CivState {
     updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
     deleteHabit: (id: string) => Promise<void>;
     endDay: () => Promise<DayReport | undefined>;
-    deployBuilding: (buildingTypeId: string, silverCost: number, x: number, y: number) => Promise<boolean>;
+    deployBuilding: (buildingTypeId: string, silverCost: number, goldCost: number, x: number, y: number) => Promise<boolean>;
     upgradeBuilding: (id: string, silverCost: number) => Promise<boolean>;
     removeBuilding: (id: string) => Promise<void>;
     unlockEvolution: (branchId: string) => Promise<boolean>;
@@ -135,8 +129,6 @@ const INITIAL_CITY: CityState = {
     unlockedEvolutions: []
 };
 
-import { checkStorageVersion } from '../../platform/storage/hydration';
-
 export const useCivStore = create<CivState>((set, get) => ({
     currentUser: null,
     loading: true,
@@ -166,7 +158,7 @@ export const useCivStore = create<CivState>((set, get) => ({
 
             if (user) {
                 const currentUid = user.uid;
-                const unsubs: Array<() => void> = [];
+                const unsubs: (() => void)[] = [];
                 const handleListenerError = (error: unknown, operationType: OperationType, path: string) => {
                     // During logout/account switch, Firestore may emit a final permission error before listener teardown.
                     if (isPermissionDeniedError(error)) {
@@ -247,13 +239,6 @@ export const useCivStore = create<CivState>((set, get) => ({
                 const buildingsRef = collection(db, 'users', currentUid, 'buildings');
                 unsubs.push(onSnapshot(buildingsRef, (snapshot) => {
                     const buildingsList = snapshot.docs.map(doc => {
-                        console.log(
-                            'RAW DOCS:',
-                            snapshot.docs.map(d => ({
-                                id: d.id,
-                                data: d.data()
-                            }))
-                        );
                         const data = doc.data();
                         return {
                             id: doc.id,
@@ -450,13 +435,12 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     endDay: async () => {
-        const { stats, city, buildings, habits, currentUser, addLog, addHabit } = get();
+        const { stats, city, buildings, habits, currentUser, addHabit } = get();
         const today = getHabitDayKey(stats.dayCount);
 
-        // Temporary: disable same-day guard while debugging end-day flow.
-        // if (stats.lastEndDay === today) {
-        //     return undefined;
-        // }
+        if (stats.lastEndDay === today) {
+            return undefined;
+        }
 
         const { updatedStats, updatedCity, report, resetHabitIds } = processEndDay(stats, city, buildings, habits, today);
 
@@ -467,7 +451,7 @@ export const useCivStore = create<CivState>((set, get) => ({
         if (currentUser) {
             try {
                 const batch = writeBatch(db);
-                batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, city: updatedCity, updatedAt: serverTimestamp() });
+                batch.set(doc(db, 'users', currentUser.uid), { stats: updatedStats, city: updatedCity, updatedAt: serverTimestamp() }, { merge: true });
 
                 batch.set(doc(db, 'leaderboard', currentUser.uid), {
                     userId: currentUser.uid,
@@ -495,12 +479,28 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     // Deploy building (Firestore subcollection)
-    deployBuilding: async (buildingTypeId: string, silverCost: number, x: number, y: number): Promise<boolean> => {
-        const { stats, currentUser, addLog } = get();
+    deployBuilding: async (buildingTypeId: string, silverCost: number, goldCost: number, x: number, y: number): Promise<boolean> => {
+        const { stats, city, buildings, currentUser, addLog } = get();
+        const buildingType = BUILDINGS.find(item => item.id === buildingTypeId);
+        if (!buildingType) return false;
 
-        if (stats.silver < silverCost) {
+        if (!isValidGridCoord(x, y)) return false;
+
+        const isOccupied = buildings.some(building => building.gridX === x && building.gridY === y);
+        if (isOccupied) return false;
+
+        const era = ERAS_CONFIG.find(item => item.id === buildingType.era);
+        if (stats.level < (era?.minLevel || 0)) return false;
+
+        const officialSilverCost = getScaledConstructionCost(buildingType.costSilver, buildings.length, city.unlockedEvolutions);
+        const officialGoldCost = getScaledConstructionCost(buildingType.costGold, buildings.length, city.unlockedEvolutions);
+
+        if (silverCost !== officialSilverCost || goldCost !== officialGoldCost) {
             return false;
         }
+
+        if (stats.silver < officialSilverCost || stats.gold < officialGoldCost) return false;
+
         if (!currentUser) {
             return false;
         }
@@ -510,7 +510,8 @@ export const useCivStore = create<CivState>((set, get) => ({
         // Update user silver
         const userRef = doc(db, 'users', currentUser.uid);
         batch.update(userRef, {
-            'stats.silver': stats.silver - silverCost,
+            'stats.silver': stats.silver - officialSilverCost,
+            'stats.gold': stats.gold - officialGoldCost,
             updatedAt: serverTimestamp()
         });
 
@@ -528,7 +529,7 @@ export const useCivStore = create<CivState>((set, get) => ({
 
         await batch.commit();
 
-        addLog('city', `Constructed ${buildingTypeId}`, -silverCost, 'silver');
+        addLog('city', `Constructed ${buildingType.name}`, -officialSilverCost, 'silver');
         return true;
     },
 
@@ -574,10 +575,31 @@ export const useCivStore = create<CivState>((set, get) => ({
     },
 
     unlockEvolution: async (branchId: string): Promise<boolean> => {
-        const { stats, city, currentUser, addLog } = get();
+        const { stats, city, buildings, currentUser, addLog } = get();
         if (city.unlockedEvolutions?.includes(branchId)) return false;
 
         const branch = EVOLUTION_BRANCHES.find(item => item.id === branchId);
+        if (!branch) return false;
+
+        const requirementsMet = branch.requirements.every((requirement) => {
+            if (requirement.type === 'level') {
+                return stats.level >= (requirement.target as number);
+            }
+            if (requirement.type === 'buildings') {
+                const ownedCount = buildings.filter(building => building.buildingTypeId === requirement.target).length;
+                return ownedCount >= (requirement.count ?? 1);
+            }
+            if (requirement.type === 'silver') {
+                return stats.silver >= (requirement.target as number);
+            }
+            if (requirement.type === 'gold') {
+                return stats.gold >= (requirement.target as number);
+            }
+            return true;
+        });
+
+        if (!requirementsMet) return false;
+
         const promotedEra = branch ? promoteEra(normalizeEra(city.currentEra), branch.era) : normalizeEra(city.currentEra);
 
         const newCity = {

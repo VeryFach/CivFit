@@ -284,7 +284,7 @@ export function MenuTab() {
                         <View style={stylesDynamic.logsCard}>
                             <View style={stylesDynamic.logsHeader}>
                                 <History size={24} color="#1E293B" />
-                                <Text style={stylesDynamic.logsTitle}>Today's Log</Text>
+                                <Text style={stylesDynamic.logsTitle}>Today Log</Text>
                             </View>
                             <ScrollView
                                 style={stylesDynamic.logsList}

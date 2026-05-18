@@ -1,6 +1,6 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
-import { Text, TextProps } from 'react-native';
+import { Text, TextProps, TextStyle } from 'react-native';
 
 type ThemedTextProps = TextProps & {
     type?: 'default' | 'title' | 'subtitle' | 'link';
@@ -27,11 +27,11 @@ export function ThemedText({ style, type = 'default', ...rest }: ThemedTextProps
     const colorScheme = useColorScheme();
     const color = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
-    const textStyle = {
+    const textStyle: TextStyle = {
         color: color.text,
         ...(type === 'title' && {
             fontSize: 28,
-            fontWeight: 'bold',
+            fontWeight: 'bold' as const,
             color: color.title,
         }),
         ...(type === 'subtitle' && {

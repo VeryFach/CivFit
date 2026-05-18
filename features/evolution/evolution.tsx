@@ -1,4 +1,4 @@
-import { ERAS_CONFIG, EVOLUTION_BRANCHES } from '@/core/constants';
+import { BUILDINGS, ERAS_CONFIG, EVOLUTION_BRANCHES } from '@/core/constants';
 import { CityState, Era, EvolutionBranch, PlacedBuilding, UserStats } from '@/core/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Icons from 'lucide-react-native';
@@ -7,10 +7,13 @@ import {
     Check,
     CheckSquare,
     ChevronRight,
+    Coins,
     GitBranch,
+    Hammer,
     Info,
     Lock,
     Target,
+    Trophy,
     X,
     Zap
 } from 'lucide-react-native';
@@ -24,6 +27,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from 'react-native';
 
@@ -74,6 +78,7 @@ function usePalette() {
 
 export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock }: EvolutionTabProps) {
     const palette = usePalette();
+    const { width: screenWidth } = useWindowDimensions();
 
     const [selectedEra, setSelectedEra] = useState<Era | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<EvolutionBranch | null>(null);
@@ -112,10 +117,175 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
         });
     };
 
-    // Helper untuk mengecek requirement building
-    const checkBuildingRequirement = (target: string): boolean => {
+    // Helper untuk mengecek requirement building sesuai count di constants.
+    const checkBuildingRequirement = (target: string, requiredCount = 1): boolean => {
         const count = buildings.filter(b => b.buildingTypeId === target).length;
-        return count >= 2;
+        return count >= requiredCount;
+    };
+
+    const getBuildingCount = (target: string) => {
+        return buildings.filter(b => b.buildingTypeId === target).length;
+    };
+
+    const isRequirementMet = (req: EvolutionBranch['requirements'][number]) => {
+        if (req.type === 'level') {
+            return stats.level >= (req.target as number);
+        }
+        if (req.type === 'buildings') {
+            return checkBuildingRequirement(req.target as string, req.count ?? 1);
+        }
+        if (req.type === 'silver') {
+            return stats.silver >= (req.target as number);
+        }
+        if (req.type === 'gold') {
+            return stats.gold >= (req.target as number);
+        }
+        return true;
+    };
+
+    const renderRequirementCard = (req: EvolutionBranch['requirements'][number], idx: number) => {
+        const isMet = isRequirementMet(req);
+
+        if (req.type === 'buildings') {
+            const target = req.target as string;
+            const buildingType = BUILDINGS.find(building => building.id === target);
+            const ownedCount = getBuildingCount(target);
+            const requiredCount = req.count ?? 1;
+            const Icon = buildingType ? (Icons as any)[buildingType.iconName] || Icons.HelpCircle : Hammer;
+
+            return (
+                <View
+                    key={idx}
+                    style={[
+                        styles.requirementBuildingCard,
+                        {
+                            backgroundColor: isMet ? palette.accent + '22' : palette.cardAlt,
+                            borderColor: isMet ? palette.accent : palette.border,
+                        },
+                    ]}
+                >
+                    <View style={[styles.requirementBuildingIcon, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                        <Icon size={28} color={isMet ? palette.accent : palette.text} />
+                    </View>
+                    <View style={styles.requirementBuildingBody}>
+                        <View style={styles.requirementTitleRow}>
+                            <Text style={[styles.requirementBuildingName, { color: palette.text }]} numberOfLines={1}>
+                                {buildingType?.name || req.description}
+                            </Text>
+                            {isMet ? <Check size={16} color={palette.accent} /> : <Lock size={14} color={palette.textMuted} />}
+                        </View>
+                        <Text style={[styles.requirementBuildingMeta, { color: palette.textMuted }]}>
+                            {buildingType ? buildingType.category : 'building'} requirement
+                        </Text>
+                        {buildingType && (
+                            <View style={styles.requirementStatsRow}>
+                                {buildingType.housing > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.card, color: palette.text }]}>H {buildingType.housing}</Text>}
+                                {buildingType.foodProduction > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.card, color: palette.text }]}>F {buildingType.foodProduction}</Text>}
+                                {buildingType.silverIncome > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.card, color: palette.text }]}>S {buildingType.silverIncome}</Text>}
+                            </View>
+                        )}
+                        <View style={styles.requirementProgressBar}>
+                            <View
+                                style={[
+                                    styles.requirementProgressFill,
+                                    {
+                                        width: `${Math.min(100, (ownedCount / requiredCount) * 100)}%`,
+                                        backgroundColor: isMet ? palette.accent : palette.accentGold,
+                                    },
+                                ]}
+                            />
+                        </View>
+                        <Text style={[styles.requirementProgressText, { color: isMet ? palette.accent : palette.textMuted }]}>
+                            Owned {Math.min(ownedCount, requiredCount)} / {requiredCount}
+                        </Text>
+                    </View>
+                </View>
+            );
+        }
+
+        const currentValue = req.type === 'level'
+            ? stats.level
+            : req.type === 'silver'
+                ? stats.silver
+                : req.type === 'gold'
+                    ? stats.gold
+                    : 0;
+        const targetValue = typeof req.target === 'number' ? req.target : 1;
+        const Icon = req.type === 'level' ? Trophy : req.type === 'silver' || req.type === 'gold' ? Coins : Target;
+
+        return (
+            <View
+                key={idx}
+                style={[
+                    styles.requirementRow,
+                    {
+                        backgroundColor: isMet ? palette.accent + '22' : palette.cardAlt,
+                        borderColor: isMet ? palette.accent : palette.border,
+                    },
+                ]}
+            >
+                <View style={styles.requirementLevelLeft}>
+                    <View style={[styles.requirementMiniIcon, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                        <Icon size={16} color={isMet ? palette.accent : palette.textMuted} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={[styles.requirementText, { color: palette.text }]}>{req.description}</Text>
+                        <Text style={[styles.requirementProgressText, { color: isMet ? palette.accent : palette.textMuted }]}>
+                            Current {Math.min(currentValue, targetValue)} / {targetValue}
+                        </Text>
+                    </View>
+                </View>
+                {isMet ? <Check size={16} color={palette.accent} /> : <Lock size={12} color={palette.textMuted} />}
+            </View>
+        );
+    };
+
+    const renderEraBuildingUnlocks = (era: Era) => {
+        const eraBuildings = BUILDINGS.filter(building => building.era === era);
+        if (eraBuildings.length === 0) return null;
+
+        return (
+            <View style={styles.constructionPreviewSection}>
+                <View style={styles.sectionHeader}>
+                    <Hammer size={16} color={palette.accent} />
+                    <Text style={[styles.benefitsLabel, { color: palette.accent }]}>Construction Unlocks</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.constructionPreviewRow}>
+                        {eraBuildings.map(building => {
+                            const Icon = (Icons as any)[building.iconName] || Icons.HelpCircle;
+                            const isAvailable = stats.level >= (ERAS_CONFIG.find(item => item.id === building.era)?.minLevel || 0);
+
+                            return (
+                                <View
+                                    key={building.id}
+                                    style={[
+                                        styles.previewBuildingCard,
+                                        {
+                                            width: screenWidth > 380 ? 156 : 136,
+                                            backgroundColor: palette.card,
+                                            borderColor: isAvailable ? palette.accent : palette.border,
+                                            opacity: isAvailable ? 1 : 0.65,
+                                        },
+                                    ]}
+                                >
+                                    <View style={[styles.previewBuildingIcon, { backgroundColor: palette.cardAlt, borderColor: palette.border }]}>
+                                        <Icon size={screenWidth > 380 ? 30 : 26} color={isAvailable ? palette.text : palette.textMuted} />
+                                    </View>
+                                    <Text style={[styles.previewBuildingName, { color: palette.text }]} numberOfLines={1}>{building.name}</Text>
+                                    <Text style={[styles.previewBuildingCategory, { color: palette.textMuted }]}>{building.category}</Text>
+                                    <View style={styles.requirementStatsRow}>
+                                        {building.housing > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.cardAlt, color: palette.text }]}>H {building.housing}</Text>}
+                                        {building.foodProduction > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.cardAlt, color: palette.text }]}>F {building.foodProduction}</Text>}
+                                        {building.silverIncome > 0 && <Text style={[styles.statBadge, { backgroundColor: palette.cardAlt, color: palette.text }]}>S {building.silverIncome}</Text>}
+                                    </View>
+                                </View>
+                            );
+                        })}
+                    </View>
+                </ScrollView>
+            </View>
+        );
     };
 
     const renderEraTimeline = () => {
@@ -213,7 +383,9 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                 </TouchableOpacity>
                             </View>
 
-                            <Text style={[styles.modalQuote, { color: palette.textMuted }]}>"{eraData.description}"</Text>
+                            <Text style={[styles.modalQuote, { color: palette.textMuted }]}>{eraData.description}</Text>
+
+                            {renderEraBuildingUnlocks(selectedEra)}
 
                             <View style={styles.branchesSection}>
                                 <Text style={[styles.sectionLabel, { color: palette.textFaint }]}>Available Evolution Paths</Text>
@@ -221,6 +393,8 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                     {branches.map(branch => {
                                         const Icon = (Icons as any)[branch.iconName] || Icons.Circle;
                                         const isBranchUnlocked = city.unlockedEvolutions?.includes(branch.id);
+                                        const requiredLevel = branch.requirements.find(req => req.type === 'level')?.target as number | undefined;
+                                        const canStartBranch = branch.requirements.every(isRequirementMet);
                                         return (
                                             <TouchableOpacity
                                                 key={branch.id}
@@ -229,6 +403,7 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                                     { backgroundColor: palette.branchCardBg, borderColor: 'transparent' },
                                                     selectedBranch?.id === branch.id && { backgroundColor: palette.branchCardSelectedBg, borderColor: palette.borderActive },
                                                     isBranchUnlocked && { backgroundColor: palette.accent + '33', borderColor: palette.accent }, // 20% opacity
+                                                    !isBranchUnlocked && !canStartBranch && { borderColor: palette.border },
                                                 ]}
                                                 onPress={() => setSelectedBranch(branch)}
                                             >
@@ -241,6 +416,16 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                                     <Icon size={32} color={palette.text} />
                                                 </View>
                                                 <Text style={[styles.branchName, { color: palette.text }]}>{branch.name}</Text>
+                                                <View style={[styles.branchLevelBadge, { backgroundColor: canStartBranch ? palette.accent + '22' : palette.card, borderColor: canStartBranch ? palette.accent : palette.border }]}>
+                                                    {canStartBranch ? (
+                                                        <Check size={10} color={palette.accent} />
+                                                    ) : (
+                                                        <Lock size={10} color={palette.textMuted} />
+                                                    )}
+                                                    <Text style={[styles.branchLevelText, { color: canStartBranch ? palette.accent : palette.textMuted }]}>
+                                                        Level {requiredLevel || eraData.minLevel}
+                                                    </Text>
+                                                </View>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -266,32 +451,14 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                         )}
                                     </View>
 
-                                    <Text style={[styles.detailDesc, { color: palette.textMuted }]}>"{selectedBranchData.description}"</Text>
+                                    <Text style={[styles.detailDesc, { color: palette.textMuted }]}>{selectedBranchData.description}</Text>
 
                                     <View style={styles.requirementsSection}>
                                         <View style={styles.sectionHeader}>
                                             <CheckSquare size={16} color={palette.accentGold} />
                                             <Text style={[styles.requirementsLabel, { color: palette.accentGold }]}>Unlock Requirements</Text>
                                         </View>
-                                        {selectedBranchData.requirements.map((req, idx) => {
-                                            let isMet = false;
-                                            if (req.type === 'level') {
-                                                isMet = stats.level >= (req.target as number);
-                                            } else if (req.type === 'buildings') {
-                                                const target = req.target as string;
-                                                isMet = checkBuildingRequirement(target);
-                                            }
-                                            return (
-                                                <View key={idx} style={[styles.requirementRow, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }]}>
-                                                    <Text style={[styles.requirementText, { color: palette.textFaint }]}>{req.description}</Text>
-                                                    {isMet ? (
-                                                        <Check size={16} color={palette.accent} />
-                                                    ) : (
-                                                        <Lock size={12} color={palette.textMuted} />
-                                                    )}
-                                                </View>
-                                            );
-                                        })}
+                                        {selectedBranchData.requirements.map(renderRequirementCard)}
                                     </View>
 
                                     <View style={styles.benefitsSection}>
@@ -312,16 +479,9 @@ export default function EvolutionTab({ stats, city, buildings, onBack, onUnlock 
                                             style={[
                                                 styles.unlockButton,
                                                 { backgroundColor: palette.accent },
-                                                (isUnlocking || !selectedBranchData.requirements.every(req => {
-                                                    if (req.type === 'level') return stats.level >= (req.target as number);
-                                                    if (req.type === 'buildings') {
-                                                        const target = req.target as string;
-                                                        return checkBuildingRequirement(target);
-                                                    }
-                                                    return true;
-                                                })) && styles.unlockButtonDisabled,
+                                                (isUnlocking || !selectedBranchData.requirements.every(isRequirementMet)) && styles.unlockButtonDisabled,
                                             ]}
-                                            disabled={isUnlocking}
+                                            disabled={isUnlocking || !selectedBranchData.requirements.every(isRequirementMet)}
                                             onPress={handleUnlock}
                                         >
                                             {isUnlocking ? (
@@ -626,6 +786,21 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
     },
+    branchLevelBadge: {
+        marginTop: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 14,
+        borderWidth: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    branchLevelText: {
+        fontSize: 8,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+    },
     detailCard: {
         borderRadius: 32,
         padding: 20,
@@ -682,6 +857,42 @@ const styles = StyleSheet.create({
     requirementsSection: {
         marginBottom: 20,
     },
+    constructionPreviewSection: {
+        marginBottom: 24,
+    },
+    constructionPreviewRow: {
+        flexDirection: 'row',
+        gap: 16,
+        paddingBottom: 4,
+    },
+    previewBuildingCard: {
+        padding: 16,
+        borderRadius: 32,
+        borderWidth: 2,
+        alignItems: 'center',
+    },
+    previewBuildingIcon: {
+        width: 60,
+        height: 60,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+        borderWidth: 1,
+    },
+    previewBuildingName: {
+        fontSize: 11,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        marginVertical: 4,
+        textAlign: 'center',
+    },
+    previewBuildingCategory: {
+        fontSize: 8,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+    },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -702,9 +913,93 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         marginBottom: 8,
     },
+    requirementLevelLeft: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginRight: 8,
+    },
+    requirementMiniIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    requirementBuildingCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 24,
+        borderWidth: 1,
+        marginBottom: 10,
+        gap: 12,
+    },
+    requirementBuildingIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    requirementBuildingBody: {
+        flex: 1,
+    },
+    requirementTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+    requirementBuildingName: {
+        flex: 1,
+        fontSize: 12,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+    },
+    requirementBuildingMeta: {
+        fontSize: 8,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        marginTop: 2,
+        marginBottom: 8,
+    },
+    requirementStatsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 4,
+        marginBottom: 8,
+    },
+    requirementProgressBar: {
+        height: 4,
+        borderRadius: 4,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        overflow: 'hidden',
+    },
+    requirementProgressFill: {
+        height: '100%',
+    },
+    requirementProgressText: {
+        fontSize: 9,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        marginTop: 6,
+    },
     requirementText: {
         fontSize: 10,
         fontWeight: '700',
+    },
+    statBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 12,
+        fontSize: 8,
+        fontWeight: '800',
+        overflow: 'hidden',
     },
     benefitsSection: {
         marginBottom: 24,

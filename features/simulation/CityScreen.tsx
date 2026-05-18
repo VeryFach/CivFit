@@ -1,5 +1,5 @@
 import { BUILDINGS, ERAS_CONFIG, GRID_SIZE } from '@/core/constants';
-import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus } from '@/core/simulation/cityUtils';
+import { calculateCitySummary, getBuildingOccupancy, getHappinessStatus, getHealthStatus, getOccupancyStatus, getProductivityStatus, getScaledConstructionCost } from '@/core/simulation/cityUtils';
 import { BuildingType, CityState, PlacedBuilding, UserStats } from '@/core/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -7,7 +7,7 @@ import * as LucideIcons from 'lucide-react-native';
 import {
     AlertTriangle,
     BadgeAlert,
-    Coins,
+    Gem,
     Dna,
     Ham,
     Hammer,
@@ -40,12 +40,6 @@ import {
 const IconRenderer = ({ name, size = 24, color = '#000' }: { name: string; size?: number; color?: string }) => {
     const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
     return <Icon size={size} color={color} />;
-};
-
-// Utility to calculate scaled costs
-const getScaledCost = (baseCost: number, totalBuildings: number): number => {
-    const scalar = 1 + totalBuildings * 0.05;
-    return Math.floor(baseCost * scalar);
 };
 
 // Loading skeleton component for the grid
@@ -117,7 +111,7 @@ interface CityTabProps {
     buildings: PlacedBuilding[];
     stats: UserStats;
     // Match order with store: id, cost, x, y
-    onDeploy: (buildingId: string, cost: number, x: number, y: number) => void;
+    onDeploy: (buildingId: string, silverCost: number, goldCost: number, x: number, y: number) => void;
     onUpgrade: (buildingId: string, cost: number) => void;
     onRemove: (buildingId: string) => void;
     onSwitchTab: (tab: string) => void;
@@ -178,10 +172,10 @@ export default function CityTab({
             return isUnlocked && matchesFilter && matchesSearch;
         }).map(b => ({
             ...b,
-            costSilver: getScaledCost(b.costSilver, totalBuildings),
-            costGold: getScaledCost(b.costGold, totalBuildings),
+            costSilver: getScaledConstructionCost(b.costSilver, totalBuildings, city.unlockedEvolutions),
+            costGold: getScaledConstructionCost(b.costGold, totalBuildings, city.unlockedEvolutions),
         }));
-    }, [stats?.level, filter, debouncedSearchQuery, buildings?.length]);
+    }, [stats?.level, filter, debouncedSearchQuery, buildings?.length, city.unlockedEvolutions]);
 
     // Tile click handler
     const handleTileClick = useCallback((x: number, y: number) => {
@@ -193,9 +187,9 @@ export default function CityTab({
         const building = buildingMap[coordKey];
 
             if (selectedBuildingType) {
-            if (!building && stats.silver >= selectedBuildingType.costSilver) {
+            if (!building && stats.silver >= selectedBuildingType.costSilver && stats.gold >= selectedBuildingType.costGold) {
                 // Match order: id, cost, x, y
-                onDeploy(selectedBuildingType.id, selectedBuildingType.costSilver, x, y);
+                onDeploy(selectedBuildingType.id, selectedBuildingType.costSilver, selectedBuildingType.costGold, x, y);
                 setSelectedBuildingType(null);
             }
             return;
@@ -208,7 +202,7 @@ export default function CityTab({
             setSelectedTile(null);
             Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
         }
-    }, [buildingMap, selectedBuildingType, stats.silver, onDeploy, slideAnim]);
+    }, [buildingMap, selectedBuildingType, stats.silver, stats.gold, onDeploy, slideAnim]);
 
     const closeDetail = useCallback(() => {
         setSelectedTile(null);
@@ -452,7 +446,7 @@ export default function CityTab({
                         <View style={{ flexDirection: 'row', gap: 16 }}>
                             {filteredBuildings.map(building => {
                                 const isSelected = selectedBuildingType?.id === building.id;
-                                const canAfford = stats.silver >= building.costSilver;
+                                const canAfford = stats.silver >= building.costSilver && stats.gold >= building.costGold;
                                 return (
                                     <TouchableOpacity
                                         key={building.id}
@@ -476,8 +470,11 @@ export default function CityTab({
                                             {building.silverIncome > 0 && <Text style={[styles.statBadge, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : palette.cardAlt, color: isSelected ? '#FFFFFF' : palette.text }]}>🪙 {building.silverIncome}</Text>}
                                         </View>
                                         <View style={[styles.costBadge, canAfford ? { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : palette.cardAlt } : { backgroundColor: '#FEE2E2', borderColor: palette.accentRed }]}>
-                                            <Coins size={12} color={canAfford ? (isSelected ? '#FFFFFF' : palette.text) : palette.accentRed} />
+                                            <Gem size={12} color={canAfford ? (isSelected ? '#FFFFFF' : palette.text) : palette.accentRed} />
                                             <Text style={{ fontSize: 10, fontWeight: '900', color: canAfford ? (isSelected ? '#FFFFFF' : palette.text) : palette.accentRed }}>{building.costSilver}</Text>
+                                            {building.costGold > 0 && (
+                                                <Text style={{ fontSize: 10, fontWeight: '900', color: canAfford ? (isSelected ? '#FFFFFF' : palette.text) : palette.accentRed }}>+ {building.costGold}G</Text>
+                                            )}
                                         </View>
                                     </TouchableOpacity>
                                 );
@@ -494,7 +491,7 @@ export default function CityTab({
                             const rawType = BUILDINGS.find(t => t.id === building.buildingTypeId);
                             if (!rawType) return null;
                             const totalBuildings = buildings.length;
-                            const scaledCostSilver = getScaledCost(rawType.costSilver, totalBuildings);
+                            const scaledCostSilver = getScaledConstructionCost(rawType.costSilver, totalBuildings, city.unlockedEvolutions);
                             const upgradeCost = Math.floor(scaledCostSilver * 0.8 * building.level);
                             const levelMult = 1 + (building.level - 1) * 0.2;
                             const currentHousing = Math.floor((rawType.housing || 0) * levelMult);
@@ -596,7 +593,7 @@ const styles = StyleSheet.create({
     chipText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
     buildingCard: { padding: 16, borderRadius: 32, borderWidth: 2, alignItems: 'center' },
     buildingIcon: { borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1 },
-    costBadge: { marginTop: 12, paddingVertical: 8, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4 },
+    costBadge: { marginTop: 12, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4 },
     statBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 12, fontSize: 8, fontWeight: '800', overflow: 'hidden' },
     detailPanel: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, elevation: 20 },
 });

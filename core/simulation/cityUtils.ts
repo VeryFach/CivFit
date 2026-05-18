@@ -15,7 +15,24 @@ export interface CitySummary {
   taxMultiplier: number;
   healthImpact: number;
   happinessImpact: number;
+  constructionCostMultiplier: number;
 }
+
+export const getConstructionCostMultiplier = (unlockedEvolutions: string[] = []): number => {
+  let multiplier = 1.0;
+  if (unlockedEvolutions.includes('nomadic')) multiplier *= 0.9;
+  if (unlockedEvolutions.includes('industrialist')) multiplier *= 0.8;
+  return multiplier;
+};
+
+export const getScaledConstructionCost = (
+  baseCost: number,
+  totalBuildings: number,
+  unlockedEvolutions: string[] = []
+): number => {
+  const scalar = 1 + totalBuildings * 0.05;
+  return Math.floor(baseCost * scalar * getConstructionCostMultiplier(unlockedEvolutions));
+};
 
 // ---------------------------------------------------------------------------
 // UTILITY: Filter bangunan dengan koordinat di luar batas grid.
@@ -41,8 +58,8 @@ export const isValidGridCoord = (x: any, y: any): boolean => {
   return (
     Number.isInteger(nx) &&
     Number.isInteger(ny) &&
-    nx >= 0 && nx < 10 && // Paksa angka 10 jika GRID_SIZE ragu
-    ny >= 0 && ny < 10
+    nx >= 0 && nx < GRID_SIZE &&
+    ny >= 0 && ny < GRID_SIZE
   );
 };
 
@@ -60,14 +77,11 @@ export const calculateCitySummary = (
   let totalSilverIncome = 0;
   let totalHealthBonus = 0;
   let totalHappinessBonus = 0;
-  let constructionCostMultiplier = 1.0;
-
   const evolutions = city.unlockedEvolutions || [];
+  const constructionCostMultiplier = getConstructionCostMultiplier(evolutions);
   if (evolutions.includes('agrarian')) totalHealthBonus += 5;
-  if (evolutions.includes('nomadic')) constructionCostMultiplier *= 0.9;
   if (evolutions.includes('feudal')) totalSilverIncome += 50;
   if (evolutions.includes('mercantile')) totalSilverIncome += 100;
-  if (evolutions.includes('industrialist')) constructionCostMultiplier *= 0.8;
 
   // Gunakan sanitizeBuildings agar bangunan out-of-bounds tidak dihitung
   const validBuildings = sanitizeBuildings(buildings);
@@ -129,6 +143,7 @@ export const calculateCitySummary = (
     taxMultiplier,
     healthImpact,
     happinessImpact,
+    constructionCostMultiplier,
   };
 };
 

@@ -117,6 +117,7 @@ export interface CityState {
 export interface EvolutionRequirement {
     type: 'level' | 'buildings' | 'silver' | 'gold' | 'achievement';
     target: number | string;
+    count?: number;
     description: string;
 }
 

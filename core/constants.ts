@@ -28,7 +28,7 @@ export const EVOLUTION_BRANCHES: EvolutionBranch[] = [
     era: Era.STONE_AGE,
     requirements: [
       { type: 'level', target: 2, description: 'Reach Level 2' },
-      { type: 'buildings', target: 'house', description: 'Own 2 Simple Houses' }
+      { type: 'buildings', target: 'house', count: 2, description: 'Own 2 Simple Houses' }
     ],
     benefits: ['+Silver from exploration', 'Building costs -10%'],
     iconName: 'Tent'
@@ -40,7 +40,7 @@ export const EVOLUTION_BRANCHES: EvolutionBranch[] = [
     era: Era.STONE_AGE,
     requirements: [
       { type: 'level', target: 3, description: 'Reach Level 3' },
-      { type: 'buildings', target: 'farm', description: 'Own 3 Communal Farms' }
+      { type: 'buildings', target: 'farm', count: 3, description: 'Own 3 Communal Farms' }
     ],
     benefits: ['+20% Food Production', '+5% Population Health'],
     iconName: 'Wheat'
