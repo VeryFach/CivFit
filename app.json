@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.CivFit"
+      "package": "com.dakocreative.habittracker"
     },
     "web": {
       "output": "static",
