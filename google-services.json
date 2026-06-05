@@ -59,6 +59,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "137900274417-5l0p0gc13eli3ud5bi1m5174umk1up2l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dakocreative.habittracker",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "137900274417-a7cnkll0kllqsbg8hks76jpl7ps1ul8r.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,0 +1,252 @@
+"Document Name","city","stats","updatedAt"
+"/users/Jx3ul5wrQdd3hUMVf3RRr31Ksk63","{
+  ""health"": 100,
+  ""housing"": 90,
+  ""currentEra"": ""STONE AGE"",
+  ""populationSick"": 0,
+  ""population"": 22,
+  ""happiness"": 100,
+  ""unlockedEvolutions"": [],
+  ""food"": 150
+}","{
+  ""gold"": 367,
+  ""momentum"": 100,
+  ""dayCount"": 5,
+  ""level"": 4,
+  ""badges"": [],
+  ""silver"": 29,
+  ""exp"": 1354,
+  ""pendingReport"": {
+    ""message"": ""You dominated the day! Momentum is building."",
+    ""hpChange"": 10,
+    ""levelUpCount"": 0,
+    ""deathCount"": 0,
+    ""date"": ""day-4"",
+    ""previousLevel"": 3,
+    ""event"": null,
+    ""silverTax"": 0,
+    ""cityHappinessChange"": 28,
+    ""expGained"": 1450,
+    ""cityHealthChange"": 11,
+    ""populationGrowth"": 9,
+    ""newLevel"": 3,
+    ""habitsCompleted"": 4,
+    ""goldGained"": 290,
+    ""sickChange"": 0,
+    ""habitsTotal"": 4,
+    ""momentumBonus"": 5,
+    ""emergencyHabitAdded"": false
+  },
+  ""lastCelebratedLevel"": 4,
+  ""maxHp"": 100,
+  ""maxExp"": 1728,
+  ""hp"": 100,
+  ""unlockedEras"": [
+    ""STONE AGE""
+  ],
+  ""lastEndDay"": ""day-4"",
+  ""skipTickets"": 0
+}","May 16, 2026 at 10:18:18 AM UTC+7"
+"/users/SlsE6uD5zehvNPLbLSMJzdtNd3g2","{
+  ""currentEra"": ""STONE AGE"",
+  ""populationSick"": 0,
+  ""health"": 93,
+  ""housing"": 30,
+  ""food"": 120,
+  ""happiness"": 84,
+  ""unlockedEvolutions"": [
+    ""agrarian""
+  ],
+  ""population"": 19
+}","{
+  ""level"": 3,
+  ""dayCount"": 22,
+  ""silver"": 2191,
+  ""badges"": [],
+  ""momentum"": 55,
+  ""gold"": 37,
+  ""lastEndDay"": ""day-21"",
+  ""unlockedEras"": [
+    ""STONE AGE""
+  ],
+  ""skipTickets"": 0,
+  ""lastCelebratedLevel"": 3,
+  ""maxHp"": 100,
+  ""pendingReport"": {
+    ""hpChange"": 10,
+    ""cityHappinessChange"": 16,
+    ""previousLevel"": 3,
+    ""event"": null,
+    ""silverTax"": 0,
+    ""date"": ""day-21"",
+    ""deathCount"": 0,
+    ""levelUpCount"": 0,
+    ""message"": ""You dominated the day! Momentum is building."",
+    ""goldGained"": 60,
+    ""habitsCompleted"": 6,
+    ""newLevel"": 3,
+    ""emergencyHabitAdded"": false,
+    ""momentumBonus"": 5,
+    ""habitsTotal"": 6,
+    ""sickChange"": 0,
+    ""expGained"": 300,
+    ""populationGrowth"": 3,
+    ""cityHealthChange"": 14
+  },
+  ""exp"": 333,
+  ""hp"": 85,
+  ""maxExp"": 1440
+}","May 18, 2026 at 3:25:46 PM UTC+7"
+"/users/fflZsPPjHvbdJPgHlVQI2Y80Lcv2","{
+  ""health"": 100,
+  ""housing"": 0,
+  ""currentEra"": ""STONE AGE"",
+  ""populationSick"": 0,
+  ""population"": 0,
+  ""unlockedEvolutions"": [],
+  ""happiness"": 100,
+  ""food"": 0
+}","{
+  ""level"": 1,
+  ""dayCount"": 1,
+  ""silver"": 500,
+  ""badges"": [],
+  ""momentum"": 50,
+  ""gold"": 100,
+  ""unlockedEras"": [
+    ""STONE AGE""
+  ],
+  ""lastEndDay"": null,
+  ""skipTickets"": 0,
+  ""lastCelebratedLevel"": 1,
+  ""maxHp"": 100,
+  ""pendingReport"": null,
+  ""exp"": 0,
+  ""hp"": 100,
+  ""maxExp"": 1000
+}","May 16, 2026 at 9:35:44 AM UTC+7"
+"/users/R79pfrucGHOQ1IlrqL7pQkoat0o1","{
+  ""currentEra"": ""DIGITAL"",
+  ""populationSick"": 0,
+  ""health"": 100,
+  ""housing"": 30,
+  ""unlockedEvolutions"": [
+    ""mercantile"",
+    ""modernist"",
+    ""cybernetic""
+  ],
+  ""food"": 25,
+  ""happiness"": 100,
+  ""population"": 8
+}","{
+  ""gold"": 263,
+  ""momentum"": 60,
+  ""dayCount"": 4,
+  ""level"": 3,
+  ""silver"": 1208,
+  ""badges"": [],
+  ""lastCelebratedLevel"": 3,
+  ""maxHp"": 100,
+  ""exp"": 1127,
+  ""pendingReport"": {
+    ""expGained"": 1250,
+    ""cityHealthChange"": 47,
+    ""populationGrowth"": 4,
+    ""habitsCompleted"": 0,
+    ""newLevel"": 3,
+    ""goldGained"": 250,
+    ""sickChange"": 0,
+    ""habitsTotal"": 1,
+    ""emergencyHabitAdded"": false,
+    ""momentumBonus"": -10,
+    ""message"": ""A rough day in the simulation. Stay consistent."",
+    ""hpChange"": -5,
+    ""levelUpCount"": 0,
+    ""previousLevel"": 3,
+    ""event"": null,
+    ""silverTax"": 108,
+    ""cityHappinessChange"": 15,
+    ""deathCount"": 0,
+    ""date"": ""day-3""
+  },
+  ""hp"": 100,
+  ""maxExp"": 1440,
+  ""unlockedEras"": [
+    ""STONE AGE""
+  ],
+  ""lastEndDay"": ""day-3"",
+  ""skipTickets"": 0
+}","May 18, 2026 at 11:17:27 AM UTC+7"
+"/users/yCdWPbzWRTgJ1fk1YUqais5nKW02","{
+  ""unlockedEvolutions"": [
+    ""feudal"",
+    ""industrialist"",
+    ""modernist"",
+    ""mercantile"",
+    ""nomadic"",
+    ""agrarian""
+  ],
+  ""food"": 0,
+  ""housing"": 0,
+  ""happiness"": 0,
+  ""population"": 45,
+  ""currentEra"": ""MODERN"",
+  ""buildings"": [
+    {
+      ""level"": 1,
+      ""health"": 100,
+      ""buildingTypeId"": ""house"",
+      ""gridX"": 2,
+      ""createdAt"": ""2026-06-04T02:36:59.146Z"",
+      ""gridY"": 6,
+      ""id"": ""krz2jn07n""
+    },
+    {
+      ""level"": 1,
+      ""health"": 100,
+      ""createdAt"": ""2026-06-04T03:14:40.793Z"",
+      ""gridY"": 4,
+      ""id"": ""mmonz3k5q"",
+      ""gridX"": 5,
+      ""buildingTypeId"": ""farm""
+    },
+    {
+      ""createdAt"": ""2026-06-04T03:14:44.164Z"",
+      ""gridY"": 1,
+      ""id"": ""otf676uw0"",
+      ""gridX"": 6,
+      ""buildingTypeId"": ""farm"",
+      ""level"": 1,
+      ""health"": 100
+    },
+    {
+      ""createdAt"": ""2026-06-04T03:14:46.313Z"",
+      ""gridY"": 9,
+      ""id"": ""h0qnqrh6i"",
+      ""gridX"": 7,
+      ""buildingTypeId"": ""farm"",
+      ""level"": 1,
+      ""health"": 100
+    }
+  ],
+  ""populationSick"": 41,
+  ""health"": 0
+}","{
+  ""unlockedEras"": [
+    ""Stone Age""
+  ],
+  ""lastEndDay"": ""2026-06-04"",
+  ""skipTickets"": 0,
+  ""maxHp"": 100,
+  ""lastCelebratedLevel"": 14,
+  ""exp"": 7239,
+  ""pendingReport"": null,
+  ""hp"": 75,
+  ""maxExp"": 10688,
+  ""level"": 14,
+  ""dayCount"": 75,
+  ""silver"": 21,
+  ""badges"": [],
+  ""momentum"": 22,
+  ""gold"": 211
+}","June 5, 2026 at 10:18:32 AM UTC+7"

@@ -23,6 +23,10 @@ const WEB_CLIENT_ID =
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
     'ISI_WEB_CLIENT_ID';
 
+    console.log(
+    '[Google Web Client ID]',
+    WEB_CLIENT_ID
+);
 // ======================================================
 
 if (WEB_CLIENT_ID === 'ISI_WEB_CLIENT_ID') {
