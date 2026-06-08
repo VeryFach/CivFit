@@ -104,25 +104,27 @@ export default function RealitaTab({
         />
     );
 
+    // ========== PERBAIKAN UTAMA ==========
+    // handleAdd: setelah berhasil tambah habit, tutup bottom sheet
     const handleAdd = () => {
         const normalizedTitle = normalizeHabitTitle(newHabit);
 
         if (normalizedTitle) {
             onAdd(normalizedTitle, habitType);
-            setNewHabit('');
-            setIsAdding(false);
+            closeBottomSheet();   // ✅ Tutup sheet setelah tambah habit
         }
     };
 
+    // handleUpdate: setelah berhasil edit habit, tutup bottom sheet
     const handleUpdate = () => {
         const normalizedTitle = normalizeHabitTitle(newHabit);
 
         if (editingHabit && normalizedTitle) {
             onUpdate(editingHabit.id, { title: normalizedTitle, type: habitType });
-            setEditingHabit(null);
-            setNewHabit('');
+            closeBottomSheet();   // ✅ Tutup sheet setelah edit habit
         }
     };
+    // =====================================
 
     const getDefaultHabitType = () => {
         return categoryFilter === 'all' ? 'daily' : categoryFilter;
@@ -156,7 +158,7 @@ export default function RealitaTab({
         });
     };
 
-    // Calendar rendering
+    // Calendar rendering (tidak berubah)
     const renderCalendar = () => {
         const now = new Date();
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -297,47 +299,49 @@ export default function RealitaTab({
                 ]}
             >
                 <View style={styles.progressHeader}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                         <Text style={[styles.progressTitle, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>Reality Center</Text>
                         <Text style={[styles.progressDate, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </Text>
                     </View>
-                    <View style={styles.viewToggle}>
-                        <TouchableOpacity
-                            style={[
-                                styles.viewButton,
-                                {
-                                    backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
-                                    borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
-                                },
-                                view === 'habits' && styles.viewButtonActiveHabits,
-                            ]}
-                            onPress={() => setView('habits')}
-                        >
-                            <Text style={[
-                                styles.viewButtonText,
-                                { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
-                                view === 'habits' && styles.viewButtonTextActive,
-                            ]}>HABITS</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.viewButton,
-                                {
-                                    backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
-                                    borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
-                                },
-                                view === 'calendar' && styles.viewButtonActiveCalendar,
-                            ]}
-                            onPress={() => setView('calendar')}
-                        >
-                            <Text style={[
-                                styles.viewButtonText,
-                                { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
-                                view === 'calendar' && styles.viewButtonTextActive,
-                            ]}>LOGS</Text>
-                        </TouchableOpacity>
+                    <View style={{ maxWidth: '45%' }}>
+                        <View style={styles.viewToggle}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.viewButton,
+                                    {
+                                        backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
+                                        borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
+                                    },
+                                    view === 'habits' && styles.viewButtonActiveHabits,
+                                ]}
+                                onPress={() => setView('habits')}
+                            >
+                                <Text style={[
+                                    styles.viewButtonText,
+                                    { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
+                                    view === 'habits' && styles.viewButtonTextActive,
+                                ]}>HABITS</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.viewButton,
+                                    {
+                                        backgroundColor: !isDarkMode ? '#FFFFFF' : 'transparent',
+                                        borderColor: !isDarkMode ? '#CBD5E1' : '#334155',
+                                    },
+                                    view === 'calendar' && styles.viewButtonActiveCalendar,
+                                ]}
+                                onPress={() => setView('calendar')}
+                            >
+                                <Text style={[
+                                    styles.viewButtonText,
+                                    { color: isDarkMode ? 'rgba(255,255,255,0.6)' : '#475569' },
+                                    view === 'calendar' && styles.viewButtonTextActive,
+                                ]}>LOGS</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
@@ -359,7 +363,7 @@ export default function RealitaTab({
                     </View>
                     <View style={styles.statItem}>
                         <View style={styles.statHeader}>
-                            <Text style={[styles.statLabel, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>Momentum (Snowball)</Text>
+                            <Text style={[styles.statLabel, { color: isDarkMode ? 'rgba(255,255,255,0.4)' : '#64748B' }]}>Momentum</Text>
                             <Text style={[styles.statValue, { color: momentumColor }]}>{momentum}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
@@ -398,7 +402,6 @@ export default function RealitaTab({
                             <Plus size={20} color="#1E293B" />
                         </TouchableOpacity>
                     </View>
-
                     <View style={styles.filterTabs}>
                         {(['all', 'daily', 'weekly', 'monthly'] as const).map(cat => (
                             <TouchableOpacity
@@ -528,12 +531,6 @@ export default function RealitaTab({
                 onRequestClose={closeBottomSheet}
                 statusBarTranslucent
             >
-                {/*
-                 * KeyboardAvoidingView wraps the whole modal content.
-                 * - iOS  : behavior="padding" mendorong sheet ke atas sebesar tinggi keyboard
-                 * - Android : behavior="height" memperkecil area agar sheet tetap terlihat
-                 * style flex:1 + justifyContent:'flex-end' agar sheet tetap nempel di bawah
-                 */}
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoid}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -582,7 +579,6 @@ export default function RealitaTab({
                             </TouchableOpacity>
                         </View>
 
-                        {/* ScrollView di dalam sheet agar tidak overflow saat keyboard muncul */}
                         <ScrollView
                             style={styles.sheetScroll}
                             contentContainerStyle={styles.sheetScrollContent}
@@ -718,6 +714,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        gap: 12,
         marginBottom: 24,
     },
     progressTitle: {
@@ -983,6 +981,7 @@ const styles = StyleSheet.create({
     },
     filterTabs: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         backgroundColor: '#F1F5F9',
         borderRadius: 20,
         padding: 4,
@@ -1301,7 +1300,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 20,
-        // Batasi tinggi maksimum agar tidak memenuhi layar
         maxHeight: screenHeight * 0.85,
     },
     bottomSheetDark: {

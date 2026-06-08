@@ -26,12 +26,15 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
+    Dimensions,
+    PanResponder,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     useWindowDimensions,
     View
 } from 'react-native';
@@ -61,27 +64,20 @@ function usePalette() {
     const isDark = scheme === 'dark';
     return {
         isDark,
-        // Backgrounds
         bg: isDark ? '#0F172A' : '#F8FAFC',
         card: isDark ? '#1E293B' : '#FFFFFF',
         cardAlt: isDark ? '#0F172A' : '#F1F5F9',
         panel: isDark ? '#111827' : '#FFFFFF',
-        // Borders
         border: isDark ? '#334155' : '#E2E8F0',
         borderMuted: isDark ? '#1E293B' : '#F1F5F9',
         borderActive: isDark ? '#14B8A6' : '#0D9488',
-        // Text
         text: isDark ? '#F8FAFC' : '#1E293B',
         textMuted: isDark ? '#94A3B8' : '#64748B',
         textFaint: isDark ? 'rgba(248,250,252,0.4)' : 'rgba(30,41,59,0.5)',
-        // Aksen brand (tetap)
         accentTeal: '#14B8A6',
         accentGold: '#FBBF24',
         accentRed: '#EF4444',
-        // Tambahan overlay untuk badge/elemen agar menyesuaikan tema
-        overlay: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-
-        // Komponen spesifik - Diperbaiki agar adaptif dengan Light Mode
+        overlay: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', // overlay gelap
         dashboardBg: isDark ? '#1E293B' : '#FFFFFF',
         dashboardBorder: isDark ? '#334155' : '#E2E8F0',
         resourceCardBg: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
@@ -101,8 +97,9 @@ function usePalette() {
         chipActiveBg: isDark ? '#FFFFFF' : '#1E293B',
         chipText: isDark ? '#F8FAFC' : '#1E293B',
         chipActiveText: isDark ? '#1E293B' : '#FFFFFF',
-        detailPanelBg: isDark ? '#0F172A' : '#FFFFFF',
+        detailPanelBg: isDark ? '#1E293B' : '#FFFFFF',
         detailPanelBorder: isDark ? '#334155' : '#E2E8F0',
+        handleColor: isDark ? '#475569' : '#CBD5E1',
     };
 }
 
@@ -110,13 +107,13 @@ interface CityTabProps {
     city: CityState;
     buildings: PlacedBuilding[];
     stats: UserStats;
-    // Match order with store: id, cost, x, y
     onDeploy: (buildingId: string, silverCost: number, goldCost: number, x: number, y: number) => void;
     onUpgrade: (buildingId: string, cost: number) => void;
     onRemove: (buildingId: string) => void;
     onSwitchTab: (tab: string) => void;
     isLoadingBuildings?: boolean;
 }
+
 export default function CityTab({
     city,
     buildings = [],
@@ -128,7 +125,7 @@ export default function CityTab({
     isLoadingBuildings = false
 }: CityTabProps) {
     const palette = usePalette();
-    const { width: screenWidth } = useWindowDimensions();
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     const [selectedBuildingType, setSelectedBuildingType] = useState<BuildingType | null>(null);
     const [selectedTile, setSelectedTile] = useState<{ x: number; y: number } | null>(null);
@@ -136,6 +133,7 @@ export default function CityTab({
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const slideAnim = useRef(new Animated.Value(0)).current;
+    const overlayOpacity = useRef(new Animated.Value(0)).current;
 
     // Layout calculations
     const GRID_PADDING = screenWidth > 400 ? 16 : 12;
@@ -161,9 +159,7 @@ export default function CityTab({
 
     // Filter and scale buildings
     const filteredBuildings = useMemo(() => {
-        const totalBuildings = buildings?.length || 0; // Beri pengaman
-
-        // Tambahkan pengaman (BUILDINGS || []) agar tidak crash
+        const totalBuildings = buildings?.length || 0;
         return (BUILDINGS || []).filter(b => {
             const era = (ERAS_CONFIG || []).find(e => e.id === b.era);
             const isUnlocked = stats?.level >= (era?.minLevel || 0);
@@ -177,18 +173,57 @@ export default function CityTab({
         }));
     }, [stats?.level, filter, debouncedSearchQuery, buildings?.length, city.unlockedEvolutions]);
 
+    // === Panel open/close logic with overlay ===
+    const openDetailPanel = useCallback((x: number, y: number) => {
+        setSelectedTile({ x, y });
+        Animated.parallel([
+            Animated.timing(slideAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+            Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]).start();
+    }, [slideAnim, overlayOpacity]);
+
+    const closeDetailPanel = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(slideAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+            Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        ]).start(() => {
+            setSelectedTile(null);
+        });
+    }, [slideAnim, overlayOpacity]);
+
+    // === PanResponder for swipe down ===
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 10,
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    // Drag down, prevent going above 0
+                    slideAnim.setValue(Math.max(0, 1 - gestureState.dy / 300));
+                    overlayOpacity.setValue(Math.max(0, 1 - gestureState.dy / 300));
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 100) {
+                    closeDetailPanel();
+                } else {
+                    Animated.parallel([
+                        Animated.spring(slideAnim, { toValue: 1, tension: 200, friction: 8, useNativeDriver: true }),
+                        Animated.spring(overlayOpacity, { toValue: 1, tension: 200, friction: 8, useNativeDriver: true }),
+                    ]).start();
+                }
+            },
+        })
+    ).current;
+
     // Tile click handler
     const handleTileClick = useCallback((x: number, y: number) => {
-        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
-            console.error(`Blocked invalid click at: ${x}_${y}`);
-            return;
-        }
+        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return;
         const coordKey = `${x}_${y}`;
         const building = buildingMap[coordKey];
 
-            if (selectedBuildingType) {
+        if (selectedBuildingType) {
             if (!building && stats.silver >= selectedBuildingType.costSilver && stats.gold >= selectedBuildingType.costGold) {
-                // Match order: id, cost, x, y
                 onDeploy(selectedBuildingType.id, selectedBuildingType.costSilver, selectedBuildingType.costGold, x, y);
                 setSelectedBuildingType(null);
             }
@@ -196,18 +231,11 @@ export default function CityTab({
         }
 
         if (building) {
-            setSelectedTile({ x, y });
-            Animated.timing(slideAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+            openDetailPanel(x, y);
         } else {
-            setSelectedTile(null);
-            Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+            closeDetailPanel();
         }
-    }, [buildingMap, selectedBuildingType, stats.silver, stats.gold, onDeploy, slideAnim]);
-
-    const closeDetail = useCallback(() => {
-        setSelectedTile(null);
-        Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    }, [slideAnim]);
+    }, [buildingMap, selectedBuildingType, stats.silver, stats.gold, onDeploy, openDetailPanel, closeDetailPanel]);
 
     // Render grid
     const renderGrid = () => {
@@ -319,7 +347,7 @@ export default function CityTab({
                         </View>
                     </View>
 
-                    {/* Resource cards */}
+                    {/* Resource cards (unchanged) */}
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
                         <View style={[styles.resourceCard, summary.isHomeless && styles.resourceCardWarning, { flexBasis: screenWidth > 500 ? '48%' : '100%', backgroundColor: palette.resourceCardBg, borderColor: palette.resourceCardBorder }]}>
                             <View style={styles.resourceTitleRow}>
@@ -411,7 +439,7 @@ export default function CityTab({
                     {renderGrid()}
                 </View>
 
-                {/* Construction Hub */}
+                {/* Construction Hub (unchanged) */}
                 <View style={{ marginBottom: 24 }}>
                     <View style={[styles.sectionHeader, { flexWrap: 'wrap', gap: 12 }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -482,81 +510,112 @@ export default function CityTab({
                         </View>
                     </ScrollView>
                 </View>
+            </ScrollView>
 
-                {/* Slide-up panel untuk detail building */}
-                {selectedTile && buildingMap[`${selectedTile.x}_${selectedTile.y}`] && (
-                    <Animated.View style={[styles.detailPanel, { transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) }], padding: screenWidth > 400 ? 24 : 16, backgroundColor: palette.detailPanelBg, borderColor: palette.detailPanelBorder }]}>
-                        {(() => {
-                            const building = buildingMap[`${selectedTile.x}_${selectedTile.y}`];
-                            const rawType = BUILDINGS.find(t => t.id === building.buildingTypeId);
-                            if (!rawType) return null;
-                            const totalBuildings = buildings.length;
-                            const scaledCostSilver = getScaledConstructionCost(rawType.costSilver, totalBuildings, city.unlockedEvolutions);
-                            const upgradeCost = Math.floor(scaledCostSilver * 0.8 * building.level);
-                            const levelMult = 1 + (building.level - 1) * 0.2;
-                            const currentHousing = Math.floor((rawType.housing || 0) * levelMult);
-                            const currentProduction = Math.floor((rawType.foodProduction || 0) * levelMult);
-                            const currentIncome = Math.floor((rawType.silverIncome || 0) * levelMult);
-                            const occupancy = getBuildingOccupancy(city.population, summary.totalHousing, currentHousing);
-                            const occStatus = getOccupancyStatus(occupancy, currentHousing);
-                            return (
-                                <>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-                                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                                            <View style={{ width: 56, height: 56, backgroundColor: palette.cardAlt, borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
-                                                <IconRenderer name={rawType.iconName} size={32} color={palette.text} />
-                                            </View>
-                                            <View>
-                                                <Text style={{ fontSize: 20, fontWeight: '900', color: palette.accentTeal }}>{rawType.name}</Text>
-                                                <Text style={{ fontSize: 12, color: palette.textMuted }}>Level {building.level} • {building.health}% Condition</Text>
+            {/* Overlay gelap di belakang panel */}
+            {selectedTile && (
+                <Animated.View
+                    style={[
+                        styles.overlay,
+                        {
+                            opacity: overlayOpacity,
+                            backgroundColor: palette.overlay,
+                        },
+                    ]}
+                >
+                    <TouchableWithoutFeedback onPress={closeDetailPanel}>
+                        <View style={{ flex: 1 }} />
+                    </TouchableWithoutFeedback>
+                </Animated.View>
+            )}
+
+            {/* Slide-up panel detail building dengan handle dan swipe */}
+            {selectedTile && buildingMap[`${selectedTile.x}_${selectedTile.y}`] && (
+                <Animated.View
+                    style={[
+                        styles.detailPanel,
+                        {
+                            transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [screenHeight, 0] }) }],
+                            padding: screenWidth > 400 ? 24 : 16,
+                            backgroundColor: palette.detailPanelBg,
+                            borderColor: palette.detailPanelBorder,
+                        },
+                    ]}
+                    {...panResponder.panHandlers}
+                >
+                    {/* Handle (garis) */}
+                    <View style={[styles.handle, { backgroundColor: palette.handleColor }]} />
+
+                    {(() => {
+                        const building = buildingMap[`${selectedTile.x}_${selectedTile.y}`];
+                        const rawType = BUILDINGS.find(t => t.id === building.buildingTypeId);
+                        if (!rawType) return null;
+                        const totalBuildings = buildings.length;
+                        const scaledCostSilver = getScaledConstructionCost(rawType.costSilver, totalBuildings, city.unlockedEvolutions);
+                        const upgradeCost = Math.floor(scaledCostSilver * 0.8 * building.level);
+                        const levelMult = 1 + (building.level - 1) * 0.2;
+                        const currentHousing = Math.floor((rawType.housing || 0) * levelMult);
+                        const currentProduction = Math.floor((rawType.foodProduction || 0) * levelMult);
+                        const currentIncome = Math.floor((rawType.silverIncome || 0) * levelMult);
+                        const occupancy = getBuildingOccupancy(city.population, summary.totalHousing, currentHousing);
+                        const occStatus = getOccupancyStatus(occupancy, currentHousing);
+                        return (
+                            <>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                                        <View style={{ width: 56, height: 56, backgroundColor: palette.cardAlt, borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
+                                            <IconRenderer name={rawType.iconName} size={32} color={palette.text} />
+                                        </View>
+                                        <View>
+                                            <Text style={{ fontSize: 20, fontWeight: '900', color: palette.accentTeal }}>{rawType.name}</Text>
+                                            <Text style={{ fontSize: 12, color: palette.textMuted }}>Level {building.level} • {building.health}% Condition</Text>
+                                        </View>
+                                    </View>
+                                    <TouchableOpacity onPress={closeDetailPanel}>
+                                        <X size={24} color={palette.text} />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                                    {rawType.housing > 0 && (
+                                        <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
+                                            <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Housing Capacity</Text>
+                                            <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentTeal }}>{occupancy} / {currentHousing}</Text>
+                                            <View style={styles.progressBar}>
+                                                <View style={[styles.progressFill, { width: `${(occupancy / (currentHousing || 1)) * 100}%`, backgroundColor: occStatus.color?.replace('text-', '') || palette.accentTeal }]} />
                                             </View>
                                         </View>
-                                        <TouchableOpacity onPress={closeDetail}>
-                                            <X size={24} color={palette.text} />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                                        {rawType.housing > 0 && (
-                                            <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
-                                                <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Housing Capacity</Text>
-                                                <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentTeal }}>{occupancy} / {currentHousing}</Text>
-                                                <View style={styles.progressBar}>
-                                                    <View style={[styles.progressFill, { width: `${(occupancy / (currentHousing || 1)) * 100}%`, backgroundColor: occStatus.color?.replace('text-', '') || palette.accentTeal }]} />
-                                                </View>
-                                            </View>
-                                        )}
-                                        {rawType.foodProduction > 0 && (
-                                            <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
-                                                <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Food Production</Text>
-                                                <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentGold }}>+{currentProduction}</Text>
-                                            </View>
-                                        )}
-                                        {rawType.silverIncome > 0 && (
-                                            <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
-                                                <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Tax Revenue</Text>
-                                                <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentTeal }}>+{currentIncome} S</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                                        <TouchableOpacity
-                                            onPress={() => { onUpgrade(`${building.gridX}_${building.gridY}`, upgradeCost); closeDetail(); }}
-                                            disabled={stats.silver < upgradeCost}
-                                            style={{ flex: 1, backgroundColor: stats.silver >= upgradeCost ? palette.accentTeal : palette.borderMuted, paddingVertical: 14, borderRadius: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-                                        >
-                                            <TrendingUp size={16} color={stats.silver >= upgradeCost ? '#FFFFFF' : palette.textMuted} />
-                                            <Text style={{ fontWeight: '900', color: stats.silver >= upgradeCost ? '#FFFFFF' : palette.textMuted }}>Upgrade ({upgradeCost} S)</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => { onRemove(`${building.gridX}_${building.gridY}`); closeDetail(); }} style={{ backgroundColor: palette.accentRed, paddingHorizontal: 20, borderRadius: 24, justifyContent: 'center' }}>
-                                            <Trash2 size={20} color="#FFF" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
-                            );
-                        })()}
-                    </Animated.View>
-                )}
-            </ScrollView>
+                                    )}
+                                    {rawType.foodProduction > 0 && (
+                                        <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
+                                            <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Food Production</Text>
+                                            <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentGold }}>+{currentProduction}</Text>
+                                        </View>
+                                    )}
+                                    {rawType.silverIncome > 0 && (
+                                        <View style={{ flex: 1, minWidth: 120, backgroundColor: palette.cardAlt, padding: 12, borderRadius: 24 }}>
+                                            <Text style={{ fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: palette.textMuted }}>Tax Revenue</Text>
+                                            <Text style={{ fontSize: 24, fontWeight: '900', color: palette.accentTeal }}>+{currentIncome} S</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+                                    <TouchableOpacity
+                                        onPress={() => { onUpgrade(`${building.gridX}_${building.gridY}`, upgradeCost); closeDetailPanel(); }}
+                                        disabled={stats.silver < upgradeCost}
+                                        style={{ flex: 1, backgroundColor: stats.silver >= upgradeCost ? palette.accentTeal : palette.borderMuted, paddingVertical: 14, borderRadius: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                                    >
+                                        <TrendingUp size={16} color={stats.silver >= upgradeCost ? '#FFFFFF' : palette.textMuted} />
+                                        <Text style={{ fontWeight: '900', color: stats.silver >= upgradeCost ? '#FFFFFF' : palette.textMuted }}>Upgrade ({upgradeCost} S)</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => { onRemove(`${building.gridX}_${building.gridY}`); closeDetailPanel(); }} style={{ backgroundColor: palette.accentRed, paddingHorizontal: 20, borderRadius: 24, justifyContent: 'center' }}>
+                                        <Trash2 size={20} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        );
+                    })()}
+                </Animated.View>
+            )}
         </SafeAreaView>
     );
 }
@@ -595,5 +654,35 @@ const styles = StyleSheet.create({
     buildingIcon: { borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1 },
     costBadge: { marginTop: 12, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4 },
     statBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 12, fontSize: 8, fontWeight: '800', overflow: 'hidden' },
-    detailPanel: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, elevation: 20 },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
+    },
+    detailPanel: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        borderWidth: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 25,
+        zIndex: 20,
+    },
+    handle: {
+        width: 48,
+        height: 5,
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginTop: 12,
+        marginBottom: 8,
+    },
 });

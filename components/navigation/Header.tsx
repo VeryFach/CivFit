@@ -30,18 +30,15 @@ export function Header() {
       };
 
   const expProgress = (stats.exp / stats.maxExp) * 100;
-
-  // Total height = status bar height + content area (56px)
   const CONTENT_HEIGHT = 56;
-  const totalHeight = insets.top + CONTENT_HEIGHT;
 
   return (
     <View
       style={[
         styles.container,
         {
-          height: totalHeight,
-          paddingTop: insets.top,
+          minHeight: insets.top + CONTENT_HEIGHT,
+          paddingTop: insets.top + 4,
           backgroundColor: palette.container,
           borderBottomColor: palette.border,
           shadowColor: palette.border,
@@ -49,16 +46,58 @@ export function Header() {
       ]}
     >
       <View style={styles.leftGroup}>
-        {/* HP Badge */}
-        <View style={[styles.badge, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+        {/* HP Badge - hanya menampilkan nilai HP */}
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+              flexShrink: 0,
+            },
+          ]}
+        >
           <Heart size={14} color={COLORS.red} fill={COLORS.red} />
-          <Text style={[styles.badgeText, { color: palette.text }]}>{stats.hp}/{stats.maxHp} HP</Text>
+          <Text
+            style={[styles.badgeText, { color: palette.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+            maxFontSizeMultiplier={1.5}
+          >
+            {stats.hp}
+          </Text>
         </View>
 
-        {/* LVL Badge */}
-        <View style={[styles.badge, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-          <Text style={[styles.lvlText, { color: palette.text }]}>LVL {stats.level}</Text>
-          <View style={[styles.progressBarBg, { backgroundColor: palette.progressBg, borderColor: palette.border }]}>
+        {/* LVL Badge - jarak lebih rapat */}
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+              flexShrink: 1,
+            },
+          ]}
+        >
+          <Text
+            style={[styles.lvlText, { color: palette.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.4}
+            maxFontSizeMultiplier={1.2}
+          >
+            LVL {stats.level}
+          </Text>
+          <View
+            style={[
+              styles.progressBarBg,
+              {
+                backgroundColor: palette.progressBg,
+                borderColor: palette.border,
+              },
+            ]}
+          >
             <View style={[styles.progressBarFill, { width: `${expProgress}%` }]} />
           </View>
         </View>
@@ -66,15 +105,39 @@ export function Header() {
 
       <View style={styles.rightGroup}>
         {/* Gold */}
-        <View style={[styles.currencyBadge, { backgroundColor: COLORS.yellow, borderColor: palette.border }]}>
+        <View
+          style={[
+            styles.currencyBadge,
+            { backgroundColor: COLORS.yellow, borderColor: palette.border },
+          ]}
+        >
           <Coins size={14} color={COLORS.dark} />
-          <Text style={[styles.currencyText, { color: COLORS.dark }]}>{stats.gold.toLocaleString()}</Text>
+          <Text
+            style={[styles.currencyText, { color: COLORS.dark }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.4}
+            maxFontSizeMultiplier={1.2}
+          >
+            {stats.gold.toLocaleString()}
+          </Text>
         </View>
 
         {/* Silver */}
-        <View style={[styles.currencyBadge, { backgroundColor: COLORS.purple, borderColor: palette.border }]}>
+        <View
+          style={[
+            styles.currencyBadge,
+            { backgroundColor: COLORS.purple, borderColor: palette.border },
+          ]}
+        >
           <Gem size={14} color={COLORS.white} />
-          <Text style={[styles.currencyText, { color: COLORS.white }]}>
+          <Text
+            style={[styles.currencyText, { color: COLORS.white }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.4}
+            maxFontSizeMultiplier={1.2}
+          >
             {stats.silver.toLocaleString()}
           </Text>
         </View>
@@ -90,9 +153,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'flex-end',      // konten turun ke bawah status bar
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 8,
     zIndex: 50,
     borderBottomWidth: 4,
@@ -104,38 +167,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    marginRight: 12,
+    flexShrink: 1,
   },
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   badge: {
     ...THEME.neoBorder,
     ...THEME.neoShadowSm,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,   // dikurangi dari 10
+    paddingVertical: 6,
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,                 // dikurangi dari 6
+    overflow: 'hidden',
   },
   badgeText: {
     fontSize: 12,
     fontWeight: '900',
-    color: COLORS.dark,
+    includeFontPadding: false,
   },
   lvlText: {
     fontSize: 10,
     fontWeight: '900',
     textTransform: 'uppercase',
+    flexShrink: 0,
   },
   progressBarBg: {
-    width: 60,
+    width: 80,
     height: 10,
     borderRadius: 5,
     borderWidth: 1,
     overflow: 'hidden',
+    marginLeft: 4,          // dikurangi dari 8
   },
   progressBarFill: {
     height: '100%',

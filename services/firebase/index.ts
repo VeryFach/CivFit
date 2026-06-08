@@ -92,34 +92,34 @@ export { auth };
 
 
 // ======================================================
-// FIRESTORE
+// FIRESTORE - PERBAIKAN
 // ======================================================
 
 let firestoreInstance;
 
-try {
+// Ambil dbId dari config (mungkin tidak ada)
+const dbId = (firebaseConfig as any).firestoreDatabaseId;
 
-    firestoreInstance =
-        firebaseConfig.firestoreDatabaseId
-            ? getFirestore(
-                app,
-                firebaseConfig.firestoreDatabaseId
-            )
-            : getFirestore(app);
+// Hanya gunakan custom database jika ID valid dan bukan '(default)'
+const useCustomDb = dbId && 
+                    typeof dbId === 'string' && 
+                    dbId.trim() !== '' && 
+                    dbId !== '(default)';
 
-} catch (error) {
-
-    console.warn(
-        '[Firebase] Firestore fallback:',
-        error
-    );
-
-    firestoreInstance =
-        getFirestore(app);
+if (useCustomDb) {
+    try {
+        console.log(`[Firebase] Using custom database: ${dbId}`);
+        firestoreInstance = getFirestore(app, dbId);
+    } catch (error) {
+        console.warn('[Firebase] Custom database failed, using default:', error);
+        firestoreInstance = getFirestore(app);
+    }
+} else {
+    console.log('[Firebase] Using default Firestore database');
+    firestoreInstance = getFirestore(app);
 }
 
-export const db =
-    firestoreInstance;
+export const db = firestoreInstance;
 
 
 // ======================================================
@@ -130,68 +130,11 @@ export const googleProvider =
     new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({
-
     prompt: 'select_account',
 });
 
 
 // ======================================================
-// FIRESTORE TEST
+// FIRESTORE TEST (DINONAKTIFKAN)
 // ======================================================
-
-async function testConnection(
-    retries = 3
-) {
-
-    try {
-
-        const connectionRef =
-            doc(
-                db,
-                'test',
-                'connection'
-            );
-
-        const snapshot =
-            await getDoc(
-                connectionRef
-            );
-
-        if (snapshot.exists()) {
-
-            console.log(
-                '[Firebase] Connection test passed'
-            );
-
-        } else {
-
-            console.warn(
-                '[Firebase] test/connection document not found'
-            );
-        }
-
-    } catch (error: any) {
-
-        console.warn(
-            '[Firebase] Connection failed:',
-            error?.message || error
-        );
-
-        if (retries > 0) {
-
-            setTimeout(() => {
-
-                testConnection(
-                    retries - 1
-                );
-
-            }, 2000);
-        }
-    }
-}
-
-setTimeout(() => {
-
-    testConnection();
-
-}, 2000);
+// Hapus atau komentar seluruh blok testConnection untuk menghindari spam error

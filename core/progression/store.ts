@@ -535,34 +535,42 @@ export const useCivStore = create<CivState>((set, get) => ({
 
     // Upgrade building
     upgradeBuilding: async (id: string, silverCost: number): Promise<boolean> => {
-        const { stats, currentUser, addLog } = get();
+        const { stats, currentUser, addLog, buildings } = get();
 
-        if (stats.silver < silverCost) {
-            return false;
-        }
-        if (!currentUser) {
-            return false;
-        }
+        if (stats.silver < silverCost) return false;
+        if (!currentUser) return false;
 
-        const batch = writeBatch(db);
-
-        // Reduce user silver
-        const userRef = doc(db, 'users', currentUser.uid);
-        batch.set(userRef, {
-            'stats.silver': stats.silver - silverCost,
-            updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        // Increment building level
-        const buildingRef = doc(db, 'users', currentUser.uid, 'buildings', id);
-        batch.update(buildingRef, {
-            level: increment(1)
+        const newSilver = stats.silver - silverCost;
+        // Optimistic update
+        set({
+            stats: { ...stats, silver: newSilver },
+            buildings: buildings.map(b => b.id === id ? { ...b, level: b.level + 1 } : b),
         });
 
-        await batch.commit();
+        try {
+            const batch = writeBatch(db);
+            const userRef = doc(db, 'users', currentUser.uid);
+            batch.update(userRef, {
+                'stats.silver': increment(-silverCost),
+                updatedAt: serverTimestamp()
+            });
 
-        addLog('city', `Upgraded building`, -silverCost, 'silver');
-        return true;
+            const buildingRef = doc(db, 'users', currentUser.uid, 'buildings', id);
+            batch.update(buildingRef, { level: increment(1) });
+
+            await batch.commit();
+            console.log('✅ Upgrade commit success');
+            addLog('city', `Upgraded building`, -silverCost, 'silver');
+            return true;
+        } catch (error) {
+            console.error('❌ Upgrade batch error:', error);
+            // Rollback state lokal
+            set({
+                stats: { ...stats, silver: stats.silver },
+                buildings: buildings,
+            });
+            return false;
+        }
     },
 
     // Remove building

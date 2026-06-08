@@ -75,6 +75,14 @@
           }
         },
         {
+          "client_id": "137900274417-otg2vqh0v1cr2f8705eo5adg3ptvf4r6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dakocreative.habittracker",
+            "certificate_hash": "1176f36fa567f1b89337655dfd69dbb39cc4e53b"
+          }
+        },
+        {
           "client_id": "137900274417-dkfq24oo21fc678jnsaboqdth8tubl0o.apps.googleusercontent.com",
           "client_type": 3
         }
