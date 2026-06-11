@@ -1,17 +1,36 @@
-import React, { ReactNode, useEffect } from 'react';
-import { useCivStore } from '@/store';
+import React, {
+    ReactNode,
+    useEffect,
+} from "react";
 
-/**
- * CivfitProvider - Context wrapper for Zustand store
- * Initializes the store on app mount
- */
-export const CivfitProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const initialize = useCivStore((state) => state.initialize);
+import { AppState } from "react-native";
 
+import { useCivStore } from "@/store";
+import { updateLastActive } from "@/services/firebase/activity";
+
+export const CivfitProvider: React.FC<{
+    children: ReactNode;
+}> = ({ children }) => {
+
+    const uid =
+        useCivStore((state) => state.currentUser?.uid);
     useEffect(() => {
-        // Initialize store on app mount
-        initialize();
-    }, [initialize]);
+        if (!uid) return;
+
+        updateLastActive(uid);
+
+        const subscription =
+            AppState.addEventListener(
+                "change",
+                async (state) => {
+                    if (state === "active") {
+                        await updateLastActive(uid);
+                    }
+                }
+            );
+
+        return () => subscription.remove();
+    }, [uid]);
 
     return <>{children}</>;
 };

@@ -559,11 +559,11 @@ export const useCivStore = create<CivState>((set, get) => ({
             batch.update(buildingRef, { level: increment(1) });
 
             await batch.commit();
-            console.log('✅ Upgrade commit success');
+            console.log('Upgrade building success');
             addLog('city', `Upgraded building`, -silverCost, 'silver');
             return true;
         } catch (error) {
-            console.error('❌ Upgrade batch error:', error);
+            console.error('Upgrade batch error:', error);
             // Rollback state lokal
             set({
                 stats: { ...stats, silver: stats.silver },

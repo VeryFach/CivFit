@@ -14,6 +14,8 @@ import {
 
 import { useCivStore } from '@/store';
 
+import { updateLastActive } from '@/services/firebase/activity';
+
 // import firebaseConfig from '@/firebase-applet-config.json';
 
 
@@ -22,11 +24,6 @@ import { useCivStore } from '@/store';
 const WEB_CLIENT_ID =
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
     'ISI_WEB_CLIENT_ID';
-
-    console.log(
-    '[Google Web Client ID]',
-    WEB_CLIENT_ID
-);
 // ======================================================
 
 if (WEB_CLIENT_ID === 'ISI_WEB_CLIENT_ID') {
@@ -70,58 +67,68 @@ export function useGoogleAuth() {
     const useGoogleAuth =
         async () => {
 
-        try {
+            try {
 
-            await GoogleSignin
-                .hasPlayServices({
-                    showPlayServicesUpdateDialog: true,
-                });
-
-            const result =
                 await GoogleSignin
-                    .signIn();
+                    .hasPlayServices({
+                        showPlayServicesUpdateDialog: true,
+                    });
 
-            if (result.type === 'cancelled') {
-                return null;
-            }
+                const result =
+                    await GoogleSignin
+                        .signIn();
 
-            const { idToken } =
-                result.data;
+                if (result.type === 'cancelled') {
+                    return null;
+                }
 
-            if (!idToken) {
-                throw new Error(
-                    'Google Sign-In did not return an idToken. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
-                );
-            }
+                const { idToken } =
+                    result.data;
 
-            const credential =
-                GoogleAuthProvider
-                    .credential(
-                        idToken
+                if (!idToken) {
+                    throw new Error(
+                        'Google Sign-In did not return an idToken. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
                     );
+                }
 
-            return await
-                signInWithCredential(
-                    auth,
-                    credential
+                const credential =
+                    GoogleAuthProvider
+                        .credential(
+                            idToken
+                        );
+
+                const authResult =
+                    await signInWithCredential(
+                        auth,
+                        credential
+                    );
+                console.log(
+                    "[AUTH] Login success",
+                    authResult.user.uid
                 );
 
-        } catch (error: any) {
+                await updateLastActive(
+                    authResult.user.uid
+                );
 
-            if (
-                error?.code === statusCodes.SIGN_IN_CANCELLED
-            ) {
+                return authResult;
+
+            } catch (error: any) {
+
+                if (
+                    error?.code === statusCodes.SIGN_IN_CANCELLED
+                ) {
+                    return null;
+                }
+
+                console.warn(
+                    '[Google Auth Error]',
+                    error
+                );
+
                 return null;
             }
-
-            console.warn(
-                '[Google Auth Error]',
-                error
-            );
-
-            return null;
-        }
-    };
+        };
 
 
     return {
