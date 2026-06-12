@@ -23,7 +23,7 @@ export default function LoginRoute() {
     useFocusEffect(
         useCallback(() => {
             if (currentUser && !storeLoading) {
-                router.replace('/(tabs)');
+                return;
             }
         }, [currentUser, storeLoading])
     );

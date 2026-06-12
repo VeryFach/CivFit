@@ -173,8 +173,14 @@ export const useCivStore = create<CivState>((set, get) => ({
                 unsubs.push(onSnapshot(userDocRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const data = snapshot.data();
-                        const incomingCity = data.city || INITIAL_CITY;
-                        const incomingStats = data.stats || INITIAL_STATS;
+                        const incomingCity = {
+                            ...INITIAL_CITY,
+                            ...(data.city || {})
+                        };
+                        const incomingStats = {
+                            ...INITIAL_STATS,
+                            ...(data.stats || {})
+                        };
                         const resolvedEra = resolveCityEra(incomingCity, incomingStats);
                         const needsEraMigration = normalizeEra(incomingCity.currentEra) !== resolvedEra;
                         const nextCity = {
@@ -457,9 +463,9 @@ export const useCivStore = create<CivState>((set, get) => ({
                     userId: currentUser.uid,
                     displayName: currentUser.displayName || 'Survivor',
                     photoURL: currentUser.photoURL || '',
-                    level: updatedStats.level,
-                    population: updatedCity.population,
-                    currentEra: updatedCity.currentEra,
+                    level: updatedStats.level ?? 1,
+                    population: updatedCity.population ?? 0,
+                    currentEra: updatedCity.currentEra ?? Era.STONE_AGE,
                     updatedAt: serverTimestamp()
                 });
 

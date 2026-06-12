@@ -13,23 +13,26 @@ export function Header() {
 
   const palette = isDarkMode
     ? {
-        container: '#0F172A',
-        surface: '#1E293B',
-        border: '#334155',
-        text: '#F8FAFC',
-        muted: '#94A3B8',
-        progressBg: '#334155',
-      }
+      container: '#0F172A',
+      surface: '#1E293B',
+      border: '#334155',
+      text: '#F8FAFC',
+      muted: '#94A3B8',
+      progressBg: '#334155',
+    }
     : {
-        container: COLORS.red,
-        surface: COLORS.white,
-        border: COLORS.dark,
-        text: COLORS.dark,
-        muted: '#475569',
-        progressBg: COLORS.gray,
-      };
+      container: COLORS.red,
+      surface: COLORS.white,
+      border: COLORS.dark,
+      text: COLORS.dark,
+      muted: '#475569',
+      progressBg: COLORS.gray,
+    };
 
-  const expProgress = (stats.exp / stats.maxExp) * 100;
+  const expProgress =
+    stats.maxExp > 0
+      ? (stats.exp / stats.maxExp) * 100
+      : 0;
   const CONTENT_HEIGHT = 56;
 
   return (
@@ -50,6 +53,7 @@ export function Header() {
         <View
           style={[
             styles.badge,
+            styles.hpBadge,
             {
               backgroundColor: palette.surface,
               borderColor: palette.border,
@@ -73,6 +77,7 @@ export function Header() {
         <View
           style={[
             styles.badge,
+            styles.levelBadge,
             {
               backgroundColor: palette.surface,
               borderColor: palette.border,
@@ -170,6 +175,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
     flexShrink: 1,
+    minWidth: 0,
   },
   rightGroup: {
     flexDirection: 'row',
@@ -178,6 +184,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   badge: {
+    minWidth: 0,
     ...THEME.neoBorder,
     ...THEME.neoShadowSm,
     paddingHorizontal: 8,   // dikurangi dari 10
@@ -193,14 +200,25 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     includeFontPadding: false,
   },
+
+  hpBadge: {
+    flexShrink: 0,
+  },
+
+  levelBadge: {
+    flex: 1,
+    minWidth: 0,
+  },
+
   lvlText: {
     fontSize: 10,
     fontWeight: '900',
     textTransform: 'uppercase',
-    flexShrink: 0,
+    flexShrink: 1,
   },
   progressBarBg: {
-    width: 80,
+    flex: 1,
+    minWidth: 40,
     height: 10,
     borderRadius: 5,
     borderWidth: 1,

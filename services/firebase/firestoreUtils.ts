@@ -1,6 +1,14 @@
 import {
+    db,
     auth,
 } from './index';
+
+import {
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+} from 'firebase/firestore';
 
 
 export enum OperationType {
@@ -194,4 +202,56 @@ handleFirestoreError(
     throw new Error(
         JSON.stringify(errInfo)
     );
+}
+
+export async function initUserProfile(uid: string) {
+    const path = `users/${uid}`;
+
+    try {
+        const ref = doc(db, 'users', uid);
+        const snapshot = await getDoc(ref);
+
+        if (!snapshot.exists()) {
+            await setDoc(ref, {
+                createdAt: new Date().toISOString(),
+                onboardingCompleted: false,
+            });
+
+            return {
+                onboardingCompleted: false,
+                isNewUser: true,
+            };
+        }
+
+        return {
+            ...snapshot.data(),
+            isNewUser: false,
+        };
+
+    } catch (error) {
+        handleFirestoreError(
+            error,
+            OperationType.CREATE,
+            path
+        );
+    }
+}
+
+export async function completeOnboarding(uid: string) {
+    const path = `users/${uid}`;
+
+    try {
+        const ref = doc(db, 'users', uid);
+
+        await updateDoc(ref, {
+            onboardingCompleted: true,
+        });
+
+    } catch (error) {
+        handleFirestoreError(
+            error,
+            OperationType.UPDATE,
+            path
+        );
+    }
 }

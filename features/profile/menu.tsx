@@ -3,7 +3,13 @@ import { auth, db } from '@/services/firebase'; // <-- import db
 import { useCivStore } from '@/store';
 import { useThemeStore } from '@/store/themeStore';
 import { router } from 'expo-router';
-import { deleteUser, signOut } from 'firebase/auth';
+import {
+    deleteUser,
+    signOut,
+    reauthenticateWithCredential,
+    GoogleAuthProvider,
+} from 'firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
     deleteDoc,
     doc,
@@ -87,26 +93,44 @@ const FAQ_DATA = [
 // Gunakan db instance yang sudah dikonfigurasi (bukan getFirestore())
 const deleteUserDataFromFirestore = async (uid: string, firestoreDb: any) => {
     const userDocRef = doc(firestoreDb, 'users', uid);
+    const leaderboardDocRef = doc(firestoreDb, 'leaderboard', uid);
 
-    // Daftar subkoleksi yang diketahui (sesuaikan dengan struktur database Anda)
-    const subcollections = ['logs', 'stats', 'missions', 'buildings', 'habits'];
+    const subcollections = [
+        'logs',
+        'stats',
+        'missions',
+        'buildings',
+        'habits'
+    ];
 
     for (const subName of subcollections) {
         try {
             const subColRef = collection(userDocRef, subName);
             const snapshot = await getDocs(query(subColRef));
+
             const deletePromises = snapshot.docs.map((docSnap) =>
-                deleteDoc(doc(firestoreDb, `users/${uid}/${subName}/${docSnap.id}`))
+                deleteDoc(
+                    doc(
+                        firestoreDb,
+                        `users/${uid}/${subName}/${docSnap.id}`
+                    )
+                )
             );
+
             await Promise.all(deletePromises);
         } catch (error) {
-            console.warn(`Failed to delete subcollection ${subName}:`, error);
-            // Lanjutkan ke subkoleksi berikutnya
+            console.warn(
+                `Failed deleting ${subName}:`,
+                error
+            );
         }
     }
 
-    // Hapus dokumen user utama
+    // delete main user doc
     await deleteDoc(userDocRef);
+
+    // delete leaderboard doc
+    await deleteDoc(leaderboardDocRef);
 };
 
 export function MenuTab() {
@@ -115,7 +139,7 @@ export function MenuTab() {
     const [activeSection, setActiveSection] = useState<
         'profile' | 'logs' | 'rank' | 'settings'
     >('profile');
-    const user = auth.currentUser;
+    const currentUser = useCivStore((state) => state.currentUser);
     const isDarkMode = useThemeStore((state) => state.isDarkMode);
     const setThemeMode = useThemeStore((state) => state.setThemeMode);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -674,29 +698,58 @@ export function MenuTab() {
 
     const performDeleteAccount = async () => {
         if (deleteInput.trim() !== 'DELETE') {
-            Alert.alert('Invalid Confirmation', 'You must type "DELETE" exactly to confirm account deletion.');
+            Alert.alert(
+                'Invalid Confirmation',
+                'You must type "DELETE" exactly.'
+            );
             return;
         }
 
         setShowDeleteModal(false);
         setIsDeleting(true);
+
         try {
-            const currentUser = auth.currentUser;
-            if (!currentUser) throw new Error('No user logged in');
+            const firebaseUser = auth.currentUser;
 
-            // 1. Hapus semua data dari Firestore menggunakan db yang sudah dikonfigurasi
-            await deleteUserDataFromFirestore(currentUser.uid, db);
+            if (!firebaseUser) {
+                throw new Error('No authenticated user found');
+            }
 
-            // 2. Hapus user dari Authentication
-            await deleteUser(currentUser);
+            // Re-auth Google
+            const googleResult = await GoogleSignin.signIn();
+            const idToken = googleResult.data?.idToken;
 
-            // 3. Redirect ke halaman login (tanpa signOut karena user sudah dihapus)
+            if (!idToken) {
+                throw new Error('Missing Google ID token');
+            }
+
+            const credential =
+                GoogleAuthProvider.credential(idToken);
+
+            await reauthenticateWithCredential(
+                firebaseUser,
+                credential
+            );
+
+            const uid = firebaseUser.uid;
+
+            // Delete Firestore first
+            await deleteUserDataFromFirestore(uid, db);
+
+            // Delete auth account
+            await deleteUser(firebaseUser);
+
+            // Signout
+            await signOut(auth);
+
             router.replace('/(auth)/login');
+
         } catch (error: any) {
             console.error('Delete account error:', error);
+
             Alert.alert(
                 'Deletion Failed',
-                error.message || 'An error occurred while deleting your account. Please try again later.'
+                error?.message || 'Failed to delete account.'
             );
         } finally {
             setIsDeleting(false);
@@ -729,13 +782,13 @@ export function MenuTab() {
                     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                         <View style={stylesDynamic.profileCard}>
                             <View style={stylesDynamic.avatarContainer}>
-                                {user?.photoURL ? (
-                                    <Image source={{ uri: user.photoURL }} style={stylesDynamic.avatar} />
+                                {currentUser?.photoURL ? (
+                                    <Image source={{ uri: currentUser.photoURL }} style={stylesDynamic.avatar} />
                                 ) : (
                                     <User size={48} color="#1E293B" />
                                 )}
                             </View>
-                            <Text style={stylesDynamic.userName}>{user?.displayName || 'Citizen #9923'}</Text>
+                            <Text style={stylesDynamic.userName}>{currentUser?.displayName || 'Citizen #9923'}</Text>
                             <Text style={stylesDynamic.userLevel}>Level {stats.level} Survivor</Text>
                             <View style={stylesDynamic.statsRow}>
                                 <View style={stylesDynamic.statBox}>

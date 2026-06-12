@@ -5,10 +5,17 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  Dimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Map, ShoppingBag, Settings } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import {
+  Home,
+  Map,
+  ShoppingBag,
+  Settings,
+} from 'lucide-react-native';
 
 interface NavigationProps {
   currentTab: string;
@@ -17,64 +24,86 @@ interface NavigationProps {
 
 const TABS = [
   { id: 'realita', label: 'Reality', Icon: Home },
-  { id: 'kota',   label: 'City',    Icon: Map },
-  { id: 'toko',   label: 'Shop',    Icon: ShoppingBag },
-  { id: 'settings', label: 'Menu',  Icon: Settings },
+  { id: 'kota', label: 'City', Icon: Map },
+  { id: 'toko', label: 'Shop', Icon: ShoppingBag },
+  { id: 'settings', label: 'Menu', Icon: Settings },
 ];
 
-const { width } = Dimensions.get('window');
-const TAB_WIDTH = width / TABS.length;
-
-export function Navigation({ currentTab, onTabChange }: NavigationProps) {
+export function Navigation({
+  currentTab,
+  onTabChange,
+}: NavigationProps) {
   const insets = useSafeAreaInsets();
+  const bottomSpacing = Math.max(insets.bottom, 12);
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingBottom: insets.bottom + 8, // ruang untuk home indicator + sentuhan ekstra
-          paddingTop: 8,
-        },
-      ]}
+    <SafeAreaView
+      edges={['bottom']}
+      style={styles.safeArea}
+      pointerEvents="box-none"
     >
-      {TABS.map(({ id, label, Icon }) => {
-        const isActive = currentTab === id;
-        return (
-          <TouchableOpacity
-            key={id}
-            onPress={() => onTabChange(id)}
-            activeOpacity={0.7}
-            style={styles.tab}
-          >
-            <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
-              <Icon
-                size={20}
-                color={isActive ? '#FFFFFF' : '#2D3436'}
-                strokeWidth={2.5}
-              />
-            </View>
-            <Text
-              style={[
-                styles.label,
-                isActive ? styles.labelActive : styles.labelInactive,
-              ]}
+      <View
+        style={[
+          styles.container,
+          {
+            marginBottom: bottomSpacing,
+          },
+        ]}
+      >
+        {TABS.map(({ id, label, Icon }) => {
+          const isActive = currentTab === id;
+
+          return (
+            <TouchableOpacity
+              key={id}
+              onPress={() => onTabChange(id)}
+              activeOpacity={0.7}
+              style={styles.tab}
             >
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+              <View
+                style={[
+                  styles.iconBox,
+                  isActive && styles.iconBoxActive,
+                ]}
+              >
+                <Icon
+                  size={20}
+                  color={isActive ? '#FFFFFF' : '#2D3436'}
+                  strokeWidth={2.5}
+                />
+              </View>
+
+              <Text
+                style={[
+                  styles.label,
+                  isActive
+                    ? styles.labelActive
+                    : styles.labelInactive,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+    zIndex: 100,
+    pointerEvents: 'box-none',
+  },
+
+  container: {
+    marginHorizontal: 12,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 3,
     borderTopColor: '#2D3436',
@@ -82,7 +111,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 8,
-    // Hard shadow brutalist
+    paddingTop: 8,
+    paddingBottom: 8,
+
     ...Platform.select({
       ios: {
         shadowColor: '#2D3436',
@@ -95,12 +126,14 @@ const styles = StyleSheet.create({
       },
     }),
   },
+
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
   },
+
   iconBox: {
     width: 40,
     height: 40,
@@ -111,8 +144,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   iconBoxActive: {
-    backgroundColor: '#E17055', // brand-red
+    backgroundColor: '#E17055',
     transform: [{ scale: 1.1 }],
     borderTopWidth: 2,
     borderLeftWidth: 2,
@@ -120,16 +154,19 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderColor: '#2D3436',
   },
+
   label: {
     fontSize: 8,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+
   labelActive: {
     color: '#2D3436',
     opacity: 1,
   },
+
   labelInactive: {
     color: '#2D3436',
     opacity: 0.35,

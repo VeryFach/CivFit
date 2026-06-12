@@ -17,6 +17,8 @@ import { useCivStore } from '@/store';
 import { updateLastActive } from '@/services/firebase/activity';
 
 // import firebaseConfig from '@/firebase-applet-config.json';
+import { initUserProfile } from '@/services/firebase/firestoreUtils';
+import { router } from 'expo-router';
 
 
 // ======================================================
@@ -107,9 +109,19 @@ export function useGoogleAuth() {
                     authResult.user.uid
                 );
 
-                await updateLastActive(
-                    authResult.user.uid
-                );
+                const uid = authResult.user.uid;
+
+                const userProfile =
+                    await initUserProfile(uid);
+
+                await updateLastActive(uid);
+
+                if (!userProfile?.onboardingCompleted) {
+                    router.replace('/onboarding');
+                    return authResult;
+                }
+
+                router.replace('/(tabs)');
 
                 return authResult;
 

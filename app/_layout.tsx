@@ -30,60 +30,45 @@ import {
   useCivStore
 } from '@/store';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
 
-  const colorScheme =
-    useColorScheme();
-
-  const initialize =
-    useCivStore(
-      (state) => state.initialize
-    );
+  const initialize = useCivStore(
+    (state) => state.initialize
+  );
 
   useEffect(() => {
-
     initialize();
-
   }, [initialize]);
 
   return (
+    <SafeAreaProvider>
+      <ThemeProvider
+        value={
+          colorScheme === 'dark'
+            ? DarkTheme
+            : DefaultTheme
+        }
+      >
+        <CivfitProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
 
-    <ThemeProvider
-      value={
-        colorScheme === 'dark'
-          ? DarkTheme
-          : DefaultTheme
-      }
-    >
-
-      <CivfitProvider>
-
-        <Stack
-          screenOptions={{
-            headerShown: false
-          }}
-        >
-
-          <Stack.Screen
-            name="index"
+          <StatusBar
+            style="auto"
+            translucent
           />
-
-          <Stack.Screen
-            name="(auth)"
-          />
-
-          <Stack.Screen
-            name="(tabs)"
-          />
-
-        </Stack>
-
-        <StatusBar
-          style="auto"
-        />
-
-      </CivfitProvider>
-
-    </ThemeProvider>
+        </CivfitProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
