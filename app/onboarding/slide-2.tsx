@@ -45,7 +45,7 @@ export default function SlideTwo() {
                 <Animated.View style={{ opacity: headOp, transform: [{ translateY: headY }], alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.headline, { color: palette.text }]}>
                         Create your{'\n'}
-                        <Text style={{ color: palette.accentTeal }}>first habit</Text>
+                        <Text style={{ fontSize: 32, color: palette.accentTeal }}>first habit</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Tap the <Text style={{ color: palette.accentTeal, fontWeight: '900' }}>+</Text> button and define habits you want to build. Daily, weekly — your schedule.

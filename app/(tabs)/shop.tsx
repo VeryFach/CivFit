@@ -3,7 +3,7 @@ import StoreTab from '@/features/store/store'; // import StoreTab component
 import { useCivStore } from '@/store';
 import { Coins, Heart, Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 export default function ShopTab() {
     // Get data and functions from the store
@@ -126,13 +126,13 @@ export default function ShopTab() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StoreTab 
                 stats={stats}
                 onPurchase={handlePurchase}
                 onGacha={handleGacha}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -140,6 +140,5 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingTop: 80, // adjust to match your header layout
     },
 });

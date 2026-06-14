@@ -191,7 +191,7 @@ async function main() {
     const userUid = uidArg ? uidArg.split('=')[1] : undefined;
 
     console.log('═══════════════════════════════════════════════════════');
-    console.log('🏢 CivFit Building Coordinate Audit');
+    console.log('🏢 Habitoria Building Coordinate Audit');
     console.log('═══════════════════════════════════════════════════════');
     console.log(`GRID_SIZE: ${GRID_SIZE} (valid coordinates: 0-${GRID_SIZE - 1})`);
     console.log(`Mode: ${shouldClean ? '🧹 AUDIT + CLEANUP' : '🔍 AUDIT ONLY'}`);

@@ -69,7 +69,7 @@ export default function SlideThree() {
                 <Animated.View style={{ opacity: textOp, transform: [{ translateY: textY }], alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.headline, { color: palette.text }]}>
                         Complete{'\n'}
-                        <Text style={{ color: palette.accentTeal }}>habits daily</Text>
+                        <Text style={{ fontSize: 32, color: palette.accentTeal }}>habits daily</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Check off each habit as you go. Consistency is the real power — your streak is your currency.

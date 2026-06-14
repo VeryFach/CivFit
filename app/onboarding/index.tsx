@@ -57,7 +57,7 @@ export default function WelcomeScreen() {
                 >
                     <Text style={[styles.headline, { color: palette.text }]}>
                         Build Habits.{'\n'}
-                        <Text style={{ color: palette.accentTeal }}>Build a City.</Text>
+                        <Text style={{ fontSize: 36, color: palette.accentTeal }}>Build a City.</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Every habit you complete fuels your civilization. Miss a day, and your city feels it.

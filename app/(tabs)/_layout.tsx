@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Header } from '@/components/navigation/Header';
@@ -12,6 +13,7 @@ export default function TabLayout() {
   const { currentUser, loading } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   // Auth redirect is handled once in app/index.tsx to avoid duplicate navigation/linking paths.
   // Keep Tabs layout passive so Expo Router only owns linking in one place.
@@ -29,7 +31,7 @@ export default function TabLayout() {
         inactive: '#9CA3AF',
         bar: '#FFFFFF',
         border: '#1F2228',
-        background: '#FDF6E3',
+        background: '#F8FAFC',
       };
 
   return (
@@ -41,13 +43,14 @@ export default function TabLayout() {
           tabBarInactiveTintColor: palette.inactive,
           headerShown: false,
           tabBarButton: HapticTab,
+          sceneStyle: { backgroundColor: palette.background },
           tabBarStyle: {
             backgroundColor: palette.bar,
             borderTopColor: palette.border,
             borderTopWidth: 4,
-            height: 84,
+            height: 64 + insets.bottom,
             paddingTop: 8,
-            paddingBottom: 10,
+            paddingBottom: insets.bottom + 8,
             shadowColor: palette.border,
             shadowOffset: { width: 0, height: -2 },
             shadowOpacity: 0.15,

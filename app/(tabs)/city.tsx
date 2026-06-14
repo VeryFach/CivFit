@@ -46,7 +46,6 @@ export default function CityTab() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: 80,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F8FAFC',
     },
 });

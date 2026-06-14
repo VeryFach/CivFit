@@ -5,18 +5,18 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import Slider from '@react-native-community/slider';
 import * as Icons from 'lucide-react-native';
 import {
+    AlertTriangle,
     ArrowRightLeft,
     CheckCircle,
     Coffee,
     Coins,
+    Heart,
     Info,
     RefreshCw,
     ShieldCheck,
     Sparkles,
-    Zap,
-    AlertTriangle,
     X,
-    Heart,
+    Zap,
 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -28,8 +28,8 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface StoreTabProps {
     stats: UserStats;
@@ -58,7 +58,8 @@ interface ConfirmConfig {
     bgColor: string;
     confirmLabel: string;
     cancelLabel?: string;
-    icon: 'zap' | 'shield' | 'sparkles' | 'warning' | 'coins';
+    hideCancel?: boolean;
+    icon: 'zap' | 'shield' | 'sparkles' | 'warning' | 'coins' | 'heart';
     onConfirm: () => void;
 }
 
@@ -119,6 +120,7 @@ function ConfirmModal({
     onCancel: () => void;
     palette: ReturnType<typeof usePalette>;
 }) {
+    const insets = useSafeAreaInsets();
     const translateYAnim = useRef(new Animated.Value(120)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const iconScaleAnim = useRef(new Animated.Value(0)).current;
@@ -164,7 +166,7 @@ function ConfirmModal({
     return (
         <Modal transparent animationType="none" visible={visible} onRequestClose={onCancel}>
             {/* Overlay */}
-            <Animated.View style={[confirmStyles.overlay, { opacity: opacityAnim }]}>
+            <Animated.View style={[confirmStyles.overlay, { opacity: opacityAnim, paddingBottom: insets.bottom }]}>
                 {/* Tap-outside to cancel */}
                 <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onCancel} />
 
@@ -465,6 +467,7 @@ function TransactionPopup({
     onClose: () => void;
     palette: ReturnType<typeof usePalette>;
 }) {
+    const insets = useSafeAreaInsets();
     const translateYAnim = useRef(new Animated.Value(80)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const iconScaleAnim = useRef(new Animated.Value(0)).current;
@@ -514,7 +517,7 @@ function TransactionPopup({
 
     return (
         <Modal transparent animationType="none" visible={visible} onRequestClose={onClose}>
-            <Animated.View style={[popupStyles.overlay, { opacity: opacityAnim }]}>
+            <Animated.View style={[popupStyles.overlay, { opacity: opacityAnim, paddingBottom: insets.bottom }]}>
                 <Animated.View
                     style={[
                         popupStyles.sheet,
@@ -1268,7 +1271,7 @@ const { width } = Dimensions.get('window');
 const recoveryCardWidth = (width - 32 - 16) / 2;
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 80 },
+    container: { flex: 1, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 80 },
     section: { marginBottom: 32 },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 4 },
     sectionTitle: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },

@@ -116,7 +116,7 @@ export default function SlideFive() {
                 <Animated.View style={{ opacity: textOp, transform: [{ translateY: textY }], alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.headline, { color: palette.text }]}>
                         Build your{'\n'}
-                        <Text style={{ color: '#818CF8' }}>city</Text>
+                        <Text style={{ fontSize: 32, color: '#818CF8' }}>city</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Build houses, farms, markets, and more.

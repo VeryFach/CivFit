@@ -535,8 +535,8 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingTop: 12,
         paddingHorizontal: 16,
-        paddingTop: 16,
         paddingBottom: 80,
     },
     backButton: {

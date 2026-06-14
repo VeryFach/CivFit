@@ -34,17 +34,17 @@ export function Header() {
       ? (stats.exp / stats.maxExp) * 100
       : 0;
   const CONTENT_HEIGHT = 56;
+  const HEADER_HEIGHT = Math.round(insets.top) + CONTENT_HEIGHT;
 
   return (
     <View
       style={[
         styles.container,
         {
-          minHeight: insets.top + CONTENT_HEIGHT,
-          paddingTop: insets.top + 4,
+          height: HEADER_HEIGHT,
+          paddingTop: Math.round(insets.top) + 4,
           backgroundColor: palette.container,
           borderBottomColor: palette.border,
-          shadowColor: palette.border,
         },
       ]}
     >
@@ -153,20 +153,12 @@ export function Header() {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 8,
-    zIndex: 50,
     borderBottomWidth: 4,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
   },
   leftGroup: {
     flexDirection: 'row',

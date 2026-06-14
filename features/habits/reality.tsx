@@ -23,6 +23,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface RealitaTabProps {
     habits: Habit[];
@@ -50,6 +51,7 @@ export default function RealitaTab({
     onEndDay,
 }: RealitaTabProps) {
     const isDarkMode = useColorScheme() === 'dark';
+    const insets = useSafeAreaInsets();
     const palette = isDarkMode
         ? { screen: '#0F172A', card: '#1E293B', border: '#334155' }
         : { screen: '#F8FAFC', card: '#FFFFFF', border: '#E2E8F0' };
@@ -532,7 +534,7 @@ export default function RealitaTab({
                 statusBarTranslucent
             >
                 <KeyboardAvoidingView
-                    style={styles.keyboardAvoid}
+                    style={[styles.keyboardAvoid, { paddingBottom: insets.bottom }]}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
                 >
@@ -690,9 +692,9 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingTop: 12,
         backgroundColor: '#F8FAFC',
         paddingHorizontal: 16,
-        paddingTop: 16,
         paddingBottom: 80,
     },
     // Progress Card

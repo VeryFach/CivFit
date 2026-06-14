@@ -78,9 +78,9 @@ export default function SlideFour() {
                 <Animated.View style={{ opacity: textOp, transform: [{ translateY: textY }], alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.headline, { color: palette.text }]}>
                         Earn{' '}
-                        <Text style={{ color: palette.accentGold }}>Gold</Text>
+                        <Text style={{ fontSize: 34, color: palette.accentGold }}>Gold</Text>
                         {' & '}
-                        <Text style={{ color: '#818CF8' }}>EXP</Text>
+                        <Text style={{ fontSize: 34, color: '#818CF8' }}>EXP</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Every completed habit fills your treasury. Gold funds your city. EXP unlocks new buildings and eras.

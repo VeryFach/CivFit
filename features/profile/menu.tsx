@@ -2,18 +2,18 @@ import { LeaderboardTab } from '@/features/leaderboard/leaderbord';
 import { auth, db } from '@/services/firebase'; // <-- import db
 import { useCivStore } from '@/store';
 import { useThemeStore } from '@/store/themeStore';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import {
     deleteUser,
-    signOut,
-    reauthenticateWithCredential,
     GoogleAuthProvider,
+    reauthenticateWithCredential,
+    signOut,
 } from 'firebase/auth';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
+    collection,
     deleteDoc,
     doc,
-    collection,
     getDocs,
     query,
 } from 'firebase/firestore'; // getFirestore dihapus
@@ -40,6 +40,8 @@ import {
 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Animated,
     Dimensions,
     Image,
@@ -48,12 +50,10 @@ import {
     ScrollView,
     StyleSheet,
     Switch,
+    TextInput,
     TextProps,
     TouchableOpacity,
     View,
-    ActivityIndicator,
-    Alert,
-    TextInput,
 } from 'react-native';
 import { platformConfirm } from '../../platform/mobile/utils/interactions';
 
@@ -63,9 +63,9 @@ const BADGE_SIZE = (width - 64) / 3;
 // FAQ data (translated)
 const FAQ_DATA = [
     {
-        question: 'What is CivFit?',
+        question: 'What is Habitoria?',
         answer:
-            'CivFit is a civilization simulation game that blends fitness with city-building. Your real-world activity generates resources for your city.',
+            'Habitoria is a civilization simulation game that blends fitness with city-building. Your real-world activity generates resources for your city.',
     },
     {
         question: 'How do I earn Silver?',
@@ -219,9 +219,9 @@ export function MenuTab() {
         return StyleSheet.create({
             container: {
                 flex: 1,
+                paddingTop: 12,
                 backgroundColor: bgColor,
                 paddingHorizontal: 16,
-                paddingTop: 16,
                 paddingBottom: 100,
             },
             tabBar: {
@@ -677,7 +677,7 @@ export function MenuTab() {
     ];
 
     const handleLogout = async () => {
-        const confirm = await platformConfirm('Sign out of your CivFit account?');
+        const confirm = await platformConfirm('Sign out of your Habitoria account?');
         if (confirm) {
             await signOut(auth);
             router.replace('/(auth)/login');
@@ -1073,7 +1073,7 @@ export function MenuTab() {
                 </View>
                 {renderSection()}
                 <View style={dynamicStyles.footer}>
-                    <Text style={dynamicStyles.footerVersion}>CivFit v1.7.0 Cloud Sync</Text>
+                    <Text style={dynamicStyles.footerVersion}>Habitoria v1.7.0 Cloud Sync</Text>
                     <Text style={dynamicStyles.footerMotto}>Build your civilization, build yourself.</Text>
                 </View>
             </ScrollView>

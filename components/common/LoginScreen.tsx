@@ -61,7 +61,7 @@ export function LoginScreen() {
         </View>
 
         <Text style={[styles.title, { color: palette.text }]}>
-          CIV<Text style={{ color: palette.accent }}>FIT</Text>
+          HABI<Text style={{ fontSize: 50, color: palette.accent }}>TORI</Text>
         </Text>
         <Text style={[styles.subtitle, { color: palette.mutedText }]}>
           Sync your productivity with the simulation
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     ...THEME.neoShadowSm,
   },
   title: {
-    fontSize: 60,
+    fontSize: 50,
     fontWeight: '900',
     fontStyle: 'italic',
     textTransform: 'uppercase',

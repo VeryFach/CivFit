@@ -5,7 +5,7 @@ import Reality from '@/features/habits/reality';
 import DailyReportOverlay from '@/features/progression/DailyReportOverlay';
 import { useCivStore } from '@/store';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 export default function RealitaTab() {
     const habits = useCivStore((state) => state.habits);
@@ -44,7 +44,7 @@ export default function RealitaTab() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <Reality
                 habits={habits}
                 logs={logs}
@@ -73,7 +73,7 @@ export default function RealitaTab() {
                     onClose={handleCloseReport}
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -81,6 +81,5 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingTop: 80,
     },
 });

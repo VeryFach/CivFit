@@ -35,7 +35,7 @@ export default function SplashScreen() {
                     entering={FadeIn.delay(400)}
                     style={[styles.title, { color: palette.text }]}
                 >
-                    CIV<Text style={[styles.titleAccent, { color: palette.accent }]}>FIT</Text>
+                    HABI<Text style={[styles.titleAccent, { color: palette.accent }]}>TORIA</Text>
                 </Animated.Text>
                 <Text style={[styles.loading, { color: palette.muted }]}>Loading...</Text>
             </Animated.View>
@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     titleAccent: {
+        fontSize: 48,
     },
     loading: {
         fontSize: 14,

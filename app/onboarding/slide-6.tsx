@@ -117,7 +117,7 @@ export default function SlideSix() {
                 <Animated.View style={{ opacity: textOp, transform: [{ translateY: textY }], alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.headline, { color: palette.text }]}>
                         End the day,{'\n'}
-                        <Text style={{ color: '#818CF8' }}>grow your city</Text>
+                        <Text style={{ fontSize: 32, color: '#818CF8' }}>grow your city</Text>
                     </Text>
                     <Text style={[styles.sub, { color: palette.textMuted }]}>
                         Tap <Text style={{ color: '#818CF8', fontWeight: '900' }}>End Day</Text> each evening to see your population grow, collect silver, and watch your city evolve.

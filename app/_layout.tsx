@@ -43,19 +43,21 @@ export default function RootLayout() {
     initialize();
   }, [initialize]);
 
+  const isDark = colorScheme === 'dark';
+  const appTheme = isDark
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: '#0F172A', card: '#1E293B' } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#F8FAFC', card: '#F8FAFC' } };
+
   return (
-    <SafeAreaProvider>
-      <ThemeProvider
-        value={
-          colorScheme === 'dark'
-            ? DarkTheme
-            : DefaultTheme
-        }
-      >
+    <SafeAreaProvider
+      style={{ backgroundColor: appTheme.colors.background }}
+    >
+      <ThemeProvider value={appTheme}>
         <CivfitProvider>
           <Stack
             screenOptions={{
-              headerShown: false
+              headerShown: false,
+              contentStyle: { backgroundColor: appTheme.colors.background },
             }}
           >
             <Stack.Screen name="index" />

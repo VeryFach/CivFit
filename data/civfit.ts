@@ -45,7 +45,7 @@ export const highlightCards: HighlightCard[] = [
   },
   {
     label: 'State',
-    value: 'CivFit Core',
+    value: 'Habitoria Core',
     note: 'Habits, city, shop, and logs',
     accent: 'amber',
   },

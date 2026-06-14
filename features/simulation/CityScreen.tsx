@@ -7,8 +7,8 @@ import * as LucideIcons from 'lucide-react-native';
 import {
     AlertTriangle,
     BadgeAlert,
-    Gem,
     Dna,
+    Gem,
     Ham,
     Hammer,
     Heart,
@@ -26,9 +26,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
-    Dimensions,
     PanResponder,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
@@ -314,9 +312,15 @@ export default function CityTab({
     const smallCapsFont = Math.max(8, screenWidth * 0.022);
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: palette.bg }}>
+        <View
+            style={{ flex: 1, paddingTop: 12, backgroundColor: palette.bg }}
+        >
             <ScrollView
-                style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 80 }}
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    paddingBottom: 24,
+                }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Dashboard Card */}
@@ -333,7 +337,7 @@ export default function CityTab({
                                     <Heart size={14} color={healthStatus.color} />
                                     <Text style={[styles.eraSub, { color: healthStatus.color }]}>Health: {city.health}%</Text>
                                 </View>
-                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border, flexDirection: 'row', alignItems: 'center', gap: 6}]}>
+                                <View style={[styles.statusBadge, { backgroundColor: palette.overlay, borderColor: palette.border, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
                                     <UsersRound size={14} color={palette.accentTeal} />
                                     <Text style={[styles.eraSub, { color: palette.accentTeal }]}>Pop: {city.population}</Text>
                                 </View>
@@ -616,7 +620,7 @@ export default function CityTab({
                     })()}
                 </Animated.View>
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -632,7 +636,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         overflow: 'hidden',
     },
-    eraTitle: { fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 },
+    eraTitle: { fontSize: 24, fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 },
     eraSub: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, marginRight: 8 },
     resourceCard: { padding: 16, borderRadius: 24, borderWidth: 1 },

@@ -1,21 +1,18 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
 import {
   Home,
   Map,
-  ShoppingBag,
   Settings,
+  ShoppingBag,
 } from 'lucide-react-native';
+import React from 'react';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface NavigationProps {
   currentTab: string;
@@ -34,22 +31,17 @@ export function Navigation({
   onTabChange,
 }: NavigationProps) {
   const insets = useSafeAreaInsets();
-  const bottomSpacing = Math.max(insets.bottom, 12);
+  const BOTTOM_SPACING = 12;
 
   return (
-    <SafeAreaView
-      edges={['bottom']}
-      style={styles.safeArea}
+    <View
+      style={[
+        styles.wrapper,
+        { bottom: insets.bottom + BOTTOM_SPACING },
+      ]}
       pointerEvents="box-none"
     >
-      <View
-        style={[
-          styles.container,
-          {
-            marginBottom: bottomSpacing,
-          },
-        ]}
-      >
+      <View style={styles.container}>
         {TABS.map(({ id, label, Icon }) => {
           const isActive = currentTab === id;
 
@@ -87,18 +79,16 @@ export function Navigation({
           );
         })}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  wrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
     zIndex: 100,
-    pointerEvents: 'box-none',
   },
 
   container: {
