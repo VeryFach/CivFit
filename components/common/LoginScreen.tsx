@@ -3,7 +3,7 @@ import { useGoogleAuth } from '@/hooks/useAuth';
 import { COLORS, THEME } from '@/theme';
 import { LogIn, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 export function LoginScreen() {
@@ -36,8 +36,13 @@ export function LoginScreen() {
     setIsLoading(true);
     try {
       await handleGoogleAuth();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      Alert.alert(
+        'Sign-In Failed',
+        error?.message || 'An unknown error occurred. Please try again.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setIsLoading(false);
     }

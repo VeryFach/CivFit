@@ -15,7 +15,7 @@
  * npx ts-node scripts/audit-buildings.ts --uid=user123 --clean    # Cleanup specific user
  */
 
-import { cert, initializeApp } from 'firebase-admin/app';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -30,17 +30,17 @@ if (!fs.existsSync(serviceAccountPath)) {
 
 const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf-8'));
 
-try {
-    initializeApp({
-        credential: cert(serviceAccount)
-    });
-} catch (e: any) {
-    if (!e.message.includes('already initialized')) {
-        throw e;
-    }
-}
+const app =
+    getApps().length
+        ? getApps()[0]
+        : initializeApp({
+            credential: cert(serviceAccount),
+        });
 
-const db = getFirestore();
+const db = getFirestore(
+    app,
+    "ai-studio-31c6953d-abfc-4895-b893-d7d3cc27aff2"
+);
 const GRID_SIZE = 10; // Must match core/constants.ts
 
 interface InvalidBuilding {

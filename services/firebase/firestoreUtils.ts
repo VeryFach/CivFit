@@ -1,6 +1,6 @@
 import {
-    db,
     auth,
+    db,
 } from './index';
 
 import {
@@ -229,11 +229,17 @@ export async function initUserProfile(uid: string) {
         };
 
     } catch (error) {
+        console.error('[initUserProfile] Firestore error:', error);
         handleFirestoreError(
             error,
             OperationType.CREATE,
             path
         );
+        // Return a safe default instead of undefined
+        return {
+            onboardingCompleted: false,
+            isNewUser: false,
+        };
     }
 }
 

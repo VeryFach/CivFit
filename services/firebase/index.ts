@@ -21,12 +21,13 @@ import {
     setPersistence,
 } from 'firebase/auth';
 
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import {
+    getFirestore,
+} from 'firebase/firestore';
 
 import {
     Platform,
 } from 'react-native';
-
 
 // ======================================================
 // APP
@@ -36,7 +37,6 @@ const app =
     getApps().length === 0
         ? initializeApp(firebaseConfig)
         : getApp();
-
 
 // ======================================================
 // AUTH
@@ -56,15 +56,17 @@ let auth: Auth;
 
 if (Platform.OS === 'web' && isBrowser) {
     auth = getAuth(app);
+
     setPersistence(
         auth,
         browserLocalPersistence
     ).catch((error) => {
         console.warn(
-            '[Firebase] Auth persistence failed:',
+            '[Firebase] Web auth persistence failed:',
             error
         );
     });
+
 } else {
     try {
         auth = initializeAuth(
@@ -76,10 +78,18 @@ if (Platform.OS === 'web' && isBrowser) {
                     ),
             }
         );
+
+        console.log(
+            '[Firebase] React Native auth initialized'
+        );
+
     } catch (error: any) {
-        if (error?.code !== 'auth/already-initialized') {
+        if (
+            error?.code !==
+            'auth/already-initialized'
+        ) {
             console.warn(
-                '[Firebase] React Native Auth persistence failed:',
+                '[Firebase] Auth init failed:',
                 error
             );
         }
@@ -90,37 +100,28 @@ if (Platform.OS === 'web' && isBrowser) {
 
 export { auth };
 
-
 // ======================================================
-// FIRESTORE - PERBAIKAN
+// FIRESTORE (CUSTOM DATABASE)
 // ======================================================
 
-let firestoreInstance;
+const dbId =
+    (firebaseConfig as any).firestoreDatabaseId;
 
-// Ambil dbId dari config (mungkin tidak ada)
-const dbId = (firebaseConfig as any).firestoreDatabaseId;
-
-// Hanya gunakan custom database jika ID valid dan bukan '(default)'
-const useCustomDb = dbId && 
-                    typeof dbId === 'string' && 
-                    dbId.trim() !== '' && 
-                    dbId !== '(default)';
-
-if (useCustomDb) {
-    try {
-        console.log(`[Firebase] Using custom database: ${dbId}`);
-        firestoreInstance = getFirestore(app, dbId);
-    } catch (error) {
-        console.warn('[Firebase] Custom database failed, using default:', error);
-        firestoreInstance = getFirestore(app);
-    }
-} else {
-    console.log('[Firebase] Using default Firestore database');
-    firestoreInstance = getFirestore(app);
+if (!dbId) {
+    throw new Error(
+        '[Firebase] firestoreDatabaseId is missing in firebase-applet-config.json'
+    );
 }
 
-export const db = firestoreInstance;
+export const db =
+    getFirestore(
+        app,
+        dbId
+    );
 
+console.log(
+    `[Firebase] Using Firestore database: ${dbId}`
+);
 
 // ======================================================
 // GOOGLE PROVIDER
@@ -132,9 +133,3 @@ export const googleProvider =
 googleProvider.setCustomParameters({
     prompt: 'select_account',
 });
-
-
-// ======================================================
-// FIRESTORE TEST (DINONAKTIFKAN)
-// ======================================================
-// Hapus atau komentar seluruh blok testConnection untuk menghindari spam error

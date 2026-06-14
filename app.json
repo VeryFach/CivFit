@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "CivFit",
+    "name": "Habitoria",
     "slug": "CivFit",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "civfit",
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
-      "versionCode": 3,
+      "versionCode": 4,
       "package": "com.dakocreative.habittracker"
     },
     "web": {
@@ -52,8 +52,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "609f0570-5a7c-4d1b-8304-2a631b15a1a5"
+        "projectId": "b40e3da1-1802-4422-b83b-3f99a80fc2b6"
       }
-    }
+    },
+    "owner": "kikong"
   }
 }

@@ -14,22 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "137900274417-8kesd9leu5hi8mpebpmjjdfls8c4hi7v.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.anonymous.CivFit",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
-          "client_id": "137900274417-keitehol0k5a294ljmafbaa62lrsji5s.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.anonymous.CivFit",
-            "certificate_hash": "a95fbf31c4cd7470b0ac0c6111d12c662bff3e5b"
-          }
-        },
-        {
           "client_id": "137900274417-dkfq24oo21fc678jnsaboqdth8tubl0o.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -64,6 +48,14 @@
           "android_info": {
             "package_name": "com.dakocreative.habittracker",
             "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "137900274417-9eh7jmjibojkcag7i1vv7jruhv1kfj69.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dakocreative.habittracker",
+            "certificate_hash": "b1042c80b3fd28498621db204efcf03b2eaaab20"
           }
         },
         {
