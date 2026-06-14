@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Sparkles } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { CTAButton, IconBadge, SCREEN_W, SlideShell, usePalette } from './shared/OnboardingShell';
+import { CTAButton, IconBadge, SlideShell, usePalette } from './shared/OnboardingShell';
 
 export default function WelcomeScreen() {
     const palette = usePalette();

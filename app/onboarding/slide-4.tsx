@@ -1,6 +1,6 @@
 // app/onboarding/slide-4.tsx  (Slide 4 — Get Gold & EXP)
 import { router } from 'expo-router';
-import { Gem, Coins, TrendingUp, } from 'lucide-react-native';
+import { Coins, Gem, TrendingUp, } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { CTAButton, SlideShell, usePalette } from './shared/OnboardingShell';
