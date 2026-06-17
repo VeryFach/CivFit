@@ -1,6 +1,6 @@
 # CivFit – Panduan Main untuk Pemain
 
-Selamat datang di CivFit. Di game ini, progres hidupmu di dunia nyata dipakai untuk membangun peradabanmu di dalam game.
+Selamat datang di CivFit (Habitoria). Di game ini, progres hidupmu di dunia nyata dipakai untuk membangun peradabanmu di dalam game.
 
 Tujuan utamanya sederhana: jalankan habit secara konsisten, jaga kotamu tetap sehat, dan bawa peradabanmu naik sampai era tertinggi.
 
@@ -286,6 +286,84 @@ Setiap cabang memberi bonus unik (misalnya bonus food, bonus silver, atau bonus 
 - Saat warga mulai banyak sakit, segera perkuat sisi health
 - Simpan Gold darurat untuk recovery atau skip ticket
 - Gunakan End Day secara rutin untuk melihat arah kotamu lebih cepat
+
+---
+
+## Sinkronisasi Mobile
+
+### Local State → Firestore Sync
+Semua state game (stats, city, habits, buildings, logs) disimpan di Zustand store dan di-sync secara real-time ke Firestore menggunakan `onSnapshot` listener. Setiap perubahan di Firestore langsung dipantulkan ke UI tanpa perlu refresh.
+
+### Optimistic Update
+Aksi seperti menyelesaikan habit, deploy bangunan, atau upgrade bangunan langsung diterapkan ke local state terlebih dahulu (optimistic update). Jika write ke Firestore gagal, state di-rollback ke kondisi sebelumnya.
+
+Contoh:
+- `completeHabit()` → local state update → `writeBatch` ke Firestore → rollback jika error.
+- `upgradeBuilding()` → optimistic increment level → batch commit → rollback jika gagal.
+
+### Retry on Reconnect
+`SyncEngine` (`core/sync/syncEngine.ts`) memiliki antrian offline berbasis SQLite. Aksi yang gagal karena tidak ada koneksi disimpan di tabel `offline_queue` dan di-replay saat koneksi pulih.
+
+### Conflict Resolution
+- Firestore security rules memastikan hanya owner yang bisa menulis data miliknya.
+- Listener scoped per user dan auto-cleanup saat logout/switch akun untuk mencegah stale data.
+- Bangunan dengan koordinat out-of-bound disanitasi otomatis oleh `sanitizeBuildings()`.
+
+---
+
+## Struktur Database Mobile
+
+```mermaid
+flowchart TD
+    U["users/{uid}"]
+    H["habits/{habitId}"]
+    B["buildings/{gridX_gridY}"]
+    L["logs/{logId}"]
+    LB["leaderboard/{uid}"]
+
+    U --> H
+    U --> B
+    U --> L
+    U --> LB
+```
+
+- **users/{uid}** — dokumen utama berisi `stats` (level, gold, silver, HP, momentum, dll) dan `city` (population, food, housing, health, happiness, era, evolusi).
+- **habits/{habitId}** — subcollection berisi daftar habit user. Setiap habit menyimpan `completedDates` (array tanggal ISO) dan `currentStreak`.
+- **buildings/{gridX_gridY}** — subcollection berisi bangunan yang ditempatkan di grid 10×10. ID dokumen menggunakan koordinat deterministik untuk mencegah duplikasi tile.
+- **logs/{logId}** — subcollection berisi audit trail. Append-only, diurutkan berdasarkan timestamp descending, dibatasi 50 entri per user.
+- **leaderboard/{uid}** — collection publik berisi ranking global. Diupdate saat End Day.
+
+---
+
+## Lifecycle Harian
+
+Setiap sesi bermain mengikuti alur berikut:
+
+1. **Login** — Google Sign-In native → Firebase Auth credential exchange → `onAuthStateChanged` fires.
+2. **Load city state** — Firestore `onSnapshot` pada `users/{uid}` hydrate stats dan city ke Zustand store.
+3. **Load habits** — Listener pada `users/{uid}/habits` memuat daftar habit dan status completion hari ini.
+4. **Complete habits** — User menyelesaikan habit → optimistic local update → Firestore batch write. Gold dan EXP langsung ditambahkan.
+5. **Calculate rewards** — Reward dihitung berdasarkan base reward × momentum multiplier. Overachievement mengurangi reward 50%.
+6. **Update stats** — Stats (gold, exp, level, momentum) diupdate di local state dan di-sync ke Firestore.
+7. **Append logs** — Setiap aksi signifikan (complete habit, build, upgrade, end day) menambah entri ke `users/{uid}/logs`.
+8. **Update pending report** — Saat End Day ditekan, `processEndDay()` menghasilkan `DayReport` yang disimpan di `stats.pendingReport`.
+9. **Sync leaderboard** — End Day menulis snapshot level, population, dan era ke `leaderboard/{uid}`.
+
+---
+
+## Konsistensi Data
+
+### Buildings sebagai Source of Truth untuk City Layout
+Bangunan disimpan di subcollection terpisah (`buildings/`) dengan ID berbasis koordinat. City state di dokumen user hanya menyimpan agregat (total housing, food, dll). Layout aktual selalu dihitung dari subcollection buildings melalui `calculateCitySummary()`.
+
+### Logs sebagai History Only
+Logs bersifat append-only dan tidak pernah dimodifikasi. Mereka berfungsi sebagai audit trail untuk menampilkan riwayat aksi. Query dibatasi 50 entri terakhir untuk performa.
+
+### Habits Menyimpan Completion State
+Setiap habit menyimpan `completedDates` (array string ISO) dan `currentStreak`. Status "selesai hari ini" ditentukan dengan mengecek apakah `day-{dayCount}` ada di array `completedDates`.
+
+### Users Menyimpan Aggregate Progression
+Dokumen user berisi `stats` (level, gold, silver, HP, momentum, dayCount) dan `city` (population, health, happiness, era). Agregat ini diupdate oleh `processEndDay()` dan sinkronisasi Firestore. Ini memungkinkan single-read hydration tanpa perlu join.
 
 ---
 
